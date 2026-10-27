@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+<!-- the table from above, in amber base: oklch(0.514 0.074 58.4), dark oklch(0.626 0.074 58.4) -->
+<style>*{stroke:#875c3b;fill:#875c3b}@media(prefers-color-scheme:dark){*{stroke:#aa7d5b;fill:#aa7d5b}}</style>
+<path d="M2.5 2.5h11v11h-11z" style="fill:none" stroke-width="1.4"/>
+<circle cx="3.5" cy="3.5" r="1.5"/><circle cx="12.5" cy="3.5" r="1.5"/>
+<circle cx="3.5" cy="12.5" r="1.5"/><circle cx="12.5" cy="12.5" r="1.5"/>
+</svg>

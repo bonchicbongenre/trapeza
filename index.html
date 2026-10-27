@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>It&rsquo;s the floor.</title>
+<meta name="description" content="A table, a floor.">
+<link rel="icon" href="favicon.svg">
+<link rel="stylesheet" href="tokens.css?4">
+<style>
+body{margin:0;padding:3rem 16px 1.4rem;min-height:100svh;box-sizing:border-box;display:flex;flex-direction:column;background:var(--paper);color:var(--ink);font:19px/1.5 var(--book);font-variant-numeric:oldstyle-nums}
+main,.by{width:100%;max-width:68rem;margin:0 auto}
+main{flex:1}
+nav,.label{max-width:34rem}
+canvas{display:block;touch-action:none;cursor:grab}
+canvas:active{cursor:grabbing}
+canvas:focus-visible,button:focus-visible{outline:1px solid var(--rule);outline-offset:6px}
+nav{display:flex;flex-wrap:wrap;gap:.2rem 1.2rem;margin-top:1rem;font:.8rem/1.6 var(--typewriter)}
+nav span{display:flex;gap:.6rem}
+button{font:inherit;background:none;border:0;padding:0;color:var(--amber-base);cursor:pointer}
+button[aria-pressed=true]{color:var(--ink);text-decoration:underline;text-underline-offset:.2em}
+.label{margin-top:2rem}
+.label p{margin:0;line-height:1.35}
+.t{font-size:1.1rem}
+.m{font-variant-caps:all-small-caps;letter-spacing:.04em}
+.d{font-variant-numeric:lining-nums tabular-nums}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+a{color:var(--amber-accent);text-underline-offset:.15em}
+.by{margin-top:3rem;text-align:right;font-size:.8rem}
+</style>
+</head>
+<body>
+<main>
+<canvas id="c" tabindex="0" aria-label="A table on an uneven floor: a plan from above and two elevations from the side. Drag it, or use the arrow keys, to turn it. Click the plan to drop a marble there."></canvas>
+<nav>
+<span id="legs"><button>3</button><button aria-pressed="true">4</button><button>5</button><button>6</button></span>
+<button id="again">another floor</button>
+<button id="marble">drop a marble</button>
+</nav>
+<p class="sr" id="s" aria-live="polite"></p>
+<div class="label">
+<p class="t">itsthefloor.fyi</p>
+<p class="m">a table, a floor</p>
+<p>2026</p>
+<p class="d"><span id="self">&ndash;</span> bytes</p>
+</div>
+</main>
+<p class="by">by <a href="https://github.com/bonchicbongenre/trapeza">bonchicbongenre</a></p>
+<script>
+// Lengths are in units of a foot's reach from the table's centre (taken as 40 cm).
+const{PI:P,sin,cos,abs,hypot,min,max,round,exp,sqrt,pow,atan2,random}=Math,fl=Math.floor,
+  $=i=>document.getElementById(i),c=$("c"),x=c.getContext("2d"),col={},C=k=>col["--"+k],
+  calm=matchMedia("(prefers-reduced-motion: reduce)").matches;
+let n=4,th=0,to=0,drag=null,press=null,f,W,E,CW,CH,wide,dpr,map,said,balls=[],last=0,gone=0;
+
+// Floors. Each is continuous, which is all the theorem asks of a floor.
+const rnd=a=>(random()*2-1)*a,
+  gauss=(k,a,w)=>{const b=Array.from({length:k},()=>[rnd(1.6),rnd(1.6),rnd(a),w[0]+random()*w[1]]);
+    return(u,v)=>{let h=0;for(const q of b){const p=u-q[0],r=v-q[1];h+=q[2]*exp(-(p*p+r*r)/(2*q[3]*q[3]))}return h}},
+  kinds=[
+    ()=>gauss(7,.09,[.35,.6]),
+    ()=>{const w=Array.from({length:3},()=>[random()*2*P,2+random()*3,random()*2*P,.02+random()*.025]);
+      return(u,v)=>{let h=0;for(const q of w)h+=q[3]*sin(q[1]*(u*cos(q[0])+v*sin(q[0]))+q[2]);return h}},
+    ()=>{const g=gauss(3,.015,[.3,.4]),u0=rnd(.8),v0=rnd(.8),a=.06+random()*.06;
+      return(u,v)=>{const p=u-u0,q=v-v0;return a*exp(-(p*p+q*q)/1.6)+g(u,v)}},
+    ()=>{const a=rnd(.05),b=rnd(.05),g=gauss(3,.03,[.3,.4]);return(u,v)=>a*u*v+b*(u*u-v*v)+g(u,v)}],
+  another=()=>{f=kinds[fl(random()*kinds.length)]();if(W)paint()},
+  feet=a=>Array.from({length:n},(_,k)=>{const q=a+P/2+2*P*k/n;return[cos(q),sin(q)]}),
+  trace=(t,pts)=>pts.forEach((q,i)=>t[i?"lineTo":"moveTo"](q[0],q[1]));
+
+// A table rests on a triangle of its feet whose plane leaves every foot on or above
+// the floor and holds the centre. Four legs (and often six) have two, and it rocks
+// between them; between two resting planes no foot goes below the floor.
+function rests(p,h){const out=[];
+  for(let i=0;i<n;i++)for(let j=i+1;j<n;j++)for(let k=j+1;k<n;k++){
+    const A=p[i],B=p[j],G=p[k],D=(B[0]-A[0])*(G[1]-A[1])-(G[0]-A[0])*(B[1]-A[1]);if(abs(D)<1e-12)continue;
+    const a=((h[j]-h[i])*(G[1]-A[1])-(h[k]-h[i])*(B[1]-A[1]))/D,b=((B[0]-A[0])*(h[k]-h[i])-(G[0]-A[0])*(h[j]-h[i]))/D,
+      z=h[i]-a*A[0]-b*A[1],Q=(B[1]-G[1])*(A[0]-G[0])+(G[0]-B[0])*(A[1]-G[1]),
+      w1=((B[1]-G[1])*(-G[0])+(G[0]-B[0])*(-G[1]))/Q,w2=((G[1]-A[1])*(-G[0])+(A[0]-G[0])*(-G[1]))/Q;
+    if(p.every((r,m)=>a*r[0]+b*r[1]+z>=h[m]-1e-9)&&w1>-1e-9&&w2>-1e-9&&1-w1-w2>-1e-9)out.push([a,b,z])}
+  return out.length?out:[[0,0,max(...h)]]}
+
+// House colours come from the tokens (oklch); the canvas wants rgb. A missing token
+// falls back to the page's own ink or paper.
+function rgb(s){const m=/oklch\(([\d.]+)(%?)\s+([\d.]+)\s+([\d.]+)/.exec(s);if(!m)return s;
+  const L=m[1]*(m[2]?.01:1),ch=+m[3],h=m[4]*P/180,a=ch*cos(h),b=ch*sin(h),
+    l=pow(L+.3963377774*a+.2158037573*b,3),q=pow(L-.1055613458*a-.0638541728*b,3),s3=pow(L-.0894841775*a-1.291485548*b,3);
+  return"rgb("+[4.0767416621*l-3.3077115913*q+.2309699292*s3,-1.2684380046*l+2.6097574011*q-.3413193965*s3,-.0041960863*l-.7034186147*q+1.707614701*s3]
+    .map(v=>round(max(0,min(1,v<=.0031308?12.92*v:1.055*pow(v,1/2.4)-.055))*255))+")"}
+function colours(){const cs=getComputedStyle(document.documentElement),bs=getComputedStyle(document.body);
+  for(const t of["ink","paper","rule","amber-base","amber-wash","qingbai-wash","ru-wash","longquan-wash","jun-base","crimson-base"]){
+    let v=rgb(cs.getPropertyValue("--"+t));if(!/\d/.test(v))v=rgb(/wash|paper/.test(t)?bs.backgroundColor:bs.color);
+    col["--"+t]=v;col["--"+t+"#"]=v.match(/\d+/g).map(Number)}
+  col.font="12px "+cs.getPropertyValue("--typewriter")}
+
+// The plan's floor: three celadon washes, low to high, and ink contours.
+function paint(){const N=min(round(W*dpr),900),o=document.createElement("canvas"),hs=new Float32Array(N*N);let lo=1,hi=-1;
+  for(let j=0;j<N;j++)for(let i=0;i<N;i++){const v=hs[j*N+i]=f((2*i/N-1)*1.6,(1-2*j/N)*1.6);if(v<lo)lo=v;if(v>hi)hi=v}
+  o.width=o.height=N;const g=o.getContext("2d"),img=g.createImageData(N,N),d=img.data,
+    band=[C("qingbai-wash#"),C("ru-wash#"),C("longquan-wash#")],ink=C("ink#");
+  for(let k=0;k<N*N;k++){const v=hs[k],b=band[max(0,min(2,fl(3*(v-lo)/(hi-lo+1e-9))))],e=v/.012,on=abs(e-round(e))<.07;
+    for(let z=0;z<3;z++)d[4*k+z]=on?(b[z]*3+ink[z])/4:b[z];d[4*k+3]=255}
+  g.putImageData(img,0,0);map=o}
+
+// The drawing is seen whole on the first screen. Wide: the two elevations stacked
+// beside the plan, sized to the window's height too. Narrow: side by side beneath
+// it. W is the plan's side; E an elevation's width.
+function size(){dpr=devicePixelRatio||1;const A=c.parentNode.clientWidth;wide=A>=648;
+  if(wide){W=max(300,min(A/1.8,innerHeight-280));E=.76*W;CW=round(W+32+E);CH=round(W)}
+  else{W=A;E=(W-24)/2;CW=W;CH=round(W*1.52)}
+  c.width=CW*dpr;c.height=CH*dpr;c.style.width=CW+"px";c.style.height=CH+"px";colours();paint()}
+
+// The outline of a set of points (Andrew's monotone chain).
+function hull(pts){pts.sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+  const cr=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]),
+    half=list=>{const out=[];for(const q of list){while(out.length>1&&cr(out[out.length-2],out[out.length-1],q)<=0)out.pop();out.push(q)}return out.slice(0,-1)};
+  return half(pts).concat(half(pts.slice().reverse()))}
+
+// An elevation: a camera on the table's own axis, so it turns with the table. The
+// drawing runs along e; the camera looks along d from its far side, within its frame.
+// All is projected from where it is: the top a slab, drawn first; then back to front
+// the floor's section at each foot's depth, the legs (square posts perpendicular to the
+// top), and the marbles, each kept behind whatever part of the slab is nearer than it.
+// Heights are drawn at twice their size, and the table is one rigid piece in that
+// drawing: its legs lean with its tilt, and the top is carried up their axis.
+function elevation(p,plane,e,X,Y,w,tag){const s=w/2.8,cx=X+w/2,leg=.6*s,lw=.085*s,d=[-e[1],e[0]],done={},
+    px=r=>cx+(r[0]*e[0]+r[1]*e[1])*s,
+    y=r=>Y-(plane[0]*r[0]+plane[1]*r[1]+plane[2])*2*s,
+    // the drawn tilt across the view (ke) and toward the camera (kd)
+    ke=2*(plane[0]*e[0]+plane[1]*e[1]),kd=2*(plane[0]*d[0]+plane[1]*d[1]),nn=hypot(1,ke),dz=lw/2*abs(kd),
+    // a point of the table, h along its legs' axis above the plane of its feet
+    up=(r,h)=>[px(r)-h*ke/nn,y(r)-h/nn],
+    deep=r=>r[0]*d[0]+r[1]*d[1],rad=max(2,RAD*s),
+    // the floor, drawn, at t across the view and z deep
+    gy=(t,z)=>Y-f(t*e[0]+z*d[0],t*e[1]+z*d[1])*2*s,
+    frame=()=>{x.beginPath();x.rect(X,Y-.6*w,w,.72*w)},
+    // the top's corners, and the slab over any part of it as seen: the outline of
+    // that part's corners at both its faces
+    V=p.map(r=>[r[0]*1.12,r[1]*1.12]),seen=q=>hull(q.flatMap(r=>[up(r,leg),up(r,leg+.07*s)]));
+  x.save();frame();x.clip();
+  x.lineCap=x.lineJoin="round";
+  // The slab is opaque: its sides a darker band, and of its two faces only the one the
+  // camera can see -- the top when the table tips toward this camera, else the underside.
+  const rise=kd>0,face=V.map(r=>up(r,leg+(rise?.07*s:0))),
+    mix=a=>"rgb("+C("amber-base#").map((v,i)=>round(C("paper#")[i]*(1-a)+v*a))+")",
+    slab=()=>{x.beginPath();trace(x,seen(V));x.closePath();x.fillStyle=mix(.3);x.fill();x.lineWidth=1.2;x.strokeStyle=C("amber-base");x.stroke();
+      x.beginPath();trace(x,face);x.closePath();x.fillStyle=rise?C("amber-wash"):mix(.6);x.fill();x.lineWidth=1;x.stroke()},
+    // a leg: a square post from its foot up to the underside. A foot on the floor sits
+    // flush on its own ground; a foot in the air keeps its square end, and with the
+    // table tipped away from the camera that end shows, in the underside's shade.
+    post=r=>{const F=up(r,0),T=up(r,leg),a=lw/2/nn,b=-lw/2*ke/nn,dk=deep(r),
+        flush=(plane[0]*r[0]+plane[1]*r[1]+plane[2]-f(r[0],r[1]))*2*s<1;
+      x.beginPath();trace(x,[[F[0]-a,flush?gy((F[0]-a-cx)/s,dk):F[1]-b],[F[0]+a,flush?gy((F[0]+a-cx)/s,dk):F[1]+b],[T[0]+a,T[1]+b],[T[0]-a,T[1]-b]]);x.closePath();
+      x.fillStyle=C("amber-wash");x.fill();x.lineWidth=1.1;x.strokeStyle=C("amber-base");x.stroke();
+      if(!rise&&!flush&&dz>.3){x.beginPath();trace(x,[[F[0]-a,F[1]-b+dz],[F[0]+a,F[1]+b+dz],[F[0]+a,F[1]+b-dz],[F[0]-a,F[1]-b-dz]]);
+        x.closePath();x.fillStyle=mix(.6);x.fill();x.stroke()}};
+  slab();
+  // the feet, and the marbles in shot, back to front
+  for(const[r,b]of[...p.map(r=>[r]),...balls.map(b=>[at(b),b]).filter(([r])=>abs(r[0]*e[0]+r[1]*e[1])<1.42)].sort((i,j)=>deep(j[0])-deep(i[0]))){
+    const dk=deep(r),near=[];
+    // what stands here is hidden by the part of the top nearer the camera than it
+    V.forEach((A,i)=>{const B=V[(i+1)%V.length],a=deep(A)-dk,b=deep(B)-dk;if(a<0)near.push(A);
+      if(a*b<0)near.push([A[0]+(B[0]-A[0])*a/(a-b),A[1]+(B[1]-A[1])*a/(a-b)])});
+    x.save();if(near.length){frame();trace(x,seen(near));x.clip("evenodd")}
+    // a marble: on the top, falling from its edge, or on the floor, where it carries
+    // only a short line of its own ground, so the floor stays still
+    if(b){const tm=r[0]*e[0]+r[1]*e[1],fy=Y-f(r[0],r[1])*2*s,T=up(r,leg+.07*s),q=b.on==1?(b.t/b.T)**2:b.on?1:0;
+      if(b.on==2){x.beginPath();for(let i=0;i<=8;i++){const t=tm-.06+.015*i;x[i?"lineTo":"moveTo"](cx+t*s,gy(t,dk))}
+        x.lineWidth=1.5;x.strokeStyle=C("ink");x.stroke()}
+      dot(T[0]+(px(r)-T[0])*q,T[1]+(fy-T[1])*q-rad,rad,b)}
+    else{if(!done[dk.toFixed(3)]){done[dk.toFixed(3)]=1;
+        const line=[],ground=new Path2D();
+        for(let i=0;i<=56;i++){const t=-1.4+2.8*i/56;line.push([cx+t*s,gy(t,dk)])}
+        ground.moveTo(X,Y+.12*w);for(const q of line)ground.lineTo(q[0],q[1]);
+        ground.lineTo(X+w,Y+.12*w);ground.closePath();x.fillStyle=C("qingbai-wash");x.fill(ground);
+        // the ridge line lives inside its own ground, so none of it shows past the green
+        x.save();x.clip(ground);x.beginPath();trace(x,line);x.lineWidth=2;x.strokeStyle=C("ink");x.stroke();x.restore()}
+      post(r)}
+    x.restore()}
+  x.fillStyle=C("ink");x.fillText(tag,X,Y-.52*w);x.restore()}
+
+// Marbles, 16 mm across. A solid ball rolls down a slope at five-sevenths of gravity
+// times the slope; gravity is 24.5 reaches a second squared. A marble is on the table
+// (0), falling (1) or on the floor (2). On the table it rides in the table's own
+// frame; past the edge it falls; on the floor it rolls downhill until it rests in a
+// hollow, or leaves the map. Marbles knock into each other and lose a little each time.
+const RAD=.02;
+function at(b){return b.on?[b.u,b.v]:[b.u*cos(th)-b.v*sin(th),b.u*sin(th)+b.v*cos(th)]}
+// is a point, in the table's frame, on its top (a regular n-gon reaching 1.12)?
+function onTop(u,v){for(let k=0;k<n;k++){const a=P/2+2*P*(k+.5)/n;if(u*cos(a)+v*sin(a)>1.12*cos(P/n))return false}return true}
+// drop a marble at a point of the room: onto the top if it is there, else the floor
+function drop(u,v){const cs=cos(th),sn=sin(th),lu=u*cs+v*sn,lv=v*cs-u*sn;
+  if(onTop(lu,lv))balls.push({on:0,u:lu,v:lv,vu:0,vv:0});
+  else if(abs(u)<=1.6&&abs(v)<=1.6)balls.push({on:2,u,v,vu:0,vv:0})}
+function roll(now,plane){const dt=min(.05,(now-last)/1000),g=24.5*5/7,cs=cos(th),sn=sin(th),
+    // rolling resistance, half a percent of gravity (glass on wood): a steady drag on
+    // a rolling marble, and a hold on a resting one until the slope beats it
+    drag=(b,au,av,damp)=>{const sp=hypot(b.vu,b.vv),R=.12,A=hypot(au,av);
+      if(sp<.01){if(A<=R){b.vu=b.vv=0;return}au*=1-R/A;av*=1-R/A}else{au-=R*b.vu/sp;av-=R*b.vv/sp}
+      b.vu+=(au-damp*b.vu)*dt;b.vv+=(av-damp*b.vv)*dt};
+  for(const b of balls){
+    if(!b.on)drag(b,-g*(plane[0]*cs+plane[1]*sn),-g*(plane[1]*cs-plane[0]*sn),.8);
+    b.u+=b.vu*dt;b.v+=b.vv*dt;
+    if(!b.on){if(!onTop(b.u,b.v)){const w=at(b);Object.assign(b,{on:1,u:w[0],v:w[1],vu:b.vu*cs-b.vv*sn,vv:b.vu*sn+b.vv*cs,t:0,T:sqrt(2*.67/24.5)})}}
+    else if(b.on==1){if((b.t+=dt)>=b.T)b.on=2}
+    else{const e=.01,gu=(f(b.u+e,b.v)-f(b.u-e,b.v))/(2*e),gv=(f(b.u,b.v+e)-f(b.u,b.v-e))/(2*e);
+      drag(b,-g*gu,-g*gv,1.2);b.rest=hypot(b.vu,b.vv)<.01?(b.rest||0)+dt:0}}
+  // two marbles in one place, on one surface, push apart; a knock trades speed, and
+  // marbles merely leaning on each other just stay apart
+  for(let i=0;i<balls.length;i++)for(let j=i+1;j<balls.length;j++){const A=balls[i],B=balls[j];
+    if(!A.on!=!B.on||A.on==1||B.on==1)continue;
+    const du=B.u-A.u,dv=B.v-A.v,d=hypot(du,dv);if(d>=2*RAD||d<1e-9)continue;
+    const nu=du/d,nv=dv/d,push=(2*RAD-d)/2,rel=(B.vu-A.vu)*nu+(B.vv-A.vv)*nv,share=rel<-.02?.9*rel:rel<0?rel/2:0;
+    A.u-=nu*push;A.v-=nv*push;B.u+=nu*push;B.v+=nv*push;
+    A.vu+=share*nu;A.vv+=share*nv;B.vu-=share*nu;B.vv-=share*nv;if(rel<-.02)A.rest=B.rest=0}
+  const before=balls.length;balls=balls.filter(b=>abs(b.u)<=1.6&&abs(b.v)<=1.6);gone+=before-balls.length}
+// a marble: Jun blue on the table, Jun crimson once it has left it
+function dot(X,Y,r,b){x.beginPath();x.arc(X,Y,r,0,7);x.fillStyle=C(b.on?"crimson-base":"jun-base");x.fill();x.lineWidth=1;x.strokeStyle=C("ink");x.stroke()}
+
+// A camera's mark on the plan: a short line on the side it looks from, and its letter.
+function camera(e,o,s,tag){const d=[-e[1],e[0]];
+  x.strokeStyle=x.fillStyle=C("ink");x.lineWidth=1.2;x.beginPath();
+  x.moveTo(o-1.36*d[0]*s,o+1.36*d[1]*s);x.lineTo(o-1.18*d[0]*s,o+1.18*d[1]*s);x.stroke();
+  x.fillText(tag,o-1.47*d[0]*s-3,o+1.47*d[1]*s+4)}
+
+function draw(wall){
+  // the page's clock runs at five sixths: everything as it would be, slow enough to follow
+  const now=wall*5/6;
+  th+=(to-th)*.22;
+  const p=feet(th),h=p.map(r=>f(r[0],r[1])),R=rests(p,h),
+    // someone leans on it: it eases onto its other triangle, lingers, and eases back
+    q=(1-cos(2*P*now/1900))/2,t=calm||R.length<2?0:q*q*q*(q*(6*q-15)+10),
+    a=R[0],b=R[R.length>1?1:0],plane=[0,1,2].map(i=>a[i]+(b[i]-a[i])*t),
+    gap=p.map((r,m)=>max(a[0]*r[0]+a[1]*r[1]+a[2],b[0]*r[0]+b[1]*r[1]+b[2])-h[m]),
+    up=gap.filter(v=>v>.004).length,s=W/3.2,o=W/2,K=1.12*s,top=new Path2D(),g=hypot(plane[0],plane[1]),
+    ux=g>1e-9?plane[0]/g:1,uy=g>1e-9?plane[1]/g:0,ea=[-sin(th),cos(th)],eb=[cos(th),sin(th)],
+    marbles=on=>{for(const b of balls)if(!b.on==on){const r=at(b);dot(o+r[0]*s,o-r[1]*s,max(2.5,RAD*s),b)}};
+  roll(now,plane);last=now;
+  x.setTransform(dpr,0,0,dpr,0,0);x.clearRect(0,0,CW,CH);x.drawImage(map,0,0,W,W);
+  marbles(false);
+  // the top from above, shaded by its tilt: a light wash high, darker toward the low side
+  trace(top,p.map(r=>[o+r[0]*s*1.12,o-r[1]*s*1.12]));top.closePath();
+  const gr=x.createLinearGradient(o+ux*K,o-uy*K,o-ux*K,o+uy*K);
+  gr.addColorStop(0,"rgba("+C("amber-wash#")+",.45)");
+  gr.addColorStop(1,"rgba("+C("amber-base#")+","+(.3+min(.45,g*12)).toFixed(3)+")");
+  x.fillStyle=gr;x.fill(top);x.strokeStyle=C("amber-base");x.lineWidth=1.5;x.stroke(top);
+  p.forEach((r,m)=>{x.beginPath();x.arc(o+r[0]*s,o-r[1]*s,5.5,0,7);x.fillStyle=gap[m]>.004?C("paper"):C("amber-base");x.fill();x.stroke()});
+  marbles(true);
+  x.font=col.font;camera(ea,o,s,"a");camera(eb,o,s,"b");
+  if(wide){elevation(p,plane,ea,W+32,.52*E+.01*W,E,"a");elevation(p,plane,eb,W+32,W/2+.52*E+.01*W,E,"b")}
+  else{elevation(p,plane,ea,0,W*1.4,E,"a");elevation(p,plane,eb,E+24,W*1.4,E,"b")}
+  const onT=balls.filter(b=>!b.on).length,still=balls.filter(b=>b.rest>.6).length,loose=balls.length-onT-still,
+    state=(!up?"It is still.":R.length>1&&b!==a?"It rocks.":up===1?"One foot is in the air.":up+" feet are in the air.")+
+      (onT?" "+onT+(onT>1?" marbles are":" marble is")+" on the table.":"")+(loose?" "+loose+" rolling on the floor.":"")+
+      (still?" "+still+(still>1?" rest":" rests")+" in a hollow.":"")+(gone?" "+gone+" rolled away.":"");
+  if(state!==said)$("s").textContent=said=state;
+  requestAnimationFrame(draw)}
+
+const ang=e=>{const r=c.getBoundingClientRect();return atan2(r.top+W/2-e.clientY,e.clientX-r.left-W/2)},
+  legs=document.querySelectorAll("#legs button");
+c.onpointerdown=e=>{drag=ang(e);press=[e.clientX,e.clientY,e.timeStamp];c.setPointerCapture(e.pointerId)};
+c.onpointermove=e=>{if(drag===null)return;const a=ang(e),d=a-drag;to+=(d+3*P)%(2*P)-P;drag=a};
+// a click (barely moved, quickly let go) on the plan drops a marble just there
+c.onpointerup=e=>{const r=c.getBoundingClientRect(),X=e.clientX-r.left,Y=e.clientY-r.top;
+  if(press&&hypot(e.clientX-press[0],e.clientY-press[1])<5&&e.timeStamp-press[2]<400&&X<W&&Y<W)drop((X-W/2)/(W/3.2),(W/2-Y)/(W/3.2));
+  drag=press=null};
+c.onpointercancel=()=>{drag=press=null};
+c.onkeydown=e=>{const r={ArrowLeft:1,ArrowUp:1,ArrowRight:-1,ArrowDown:-1}[e.key];if(r){to+=r*P/360;e.preventDefault()}};
+legs.forEach(btn=>btn.onclick=()=>{n=+btn.textContent;legs.forEach(o=>o.setAttribute("aria-pressed",o===btn))});
+$("again").onclick=another;
+// the button drops one somewhere on the top
+$("marble").onclick=()=>{const a=random()*2*P,r=sqrt(random())*.9*1.12*cos(P/n);balls.push({on:0,u:r*cos(a),v:r*sin(a),vu:0,vv:0})};
+addEventListener("resize",size);
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change",size);
+another();size();requestAnimationFrame(draw);
+
+const nav=performance.getEntriesByType("navigation")[0];
+$("self").textContent=(nav&&nav.decodedBodySize||document.documentElement.outerHTML.length).toLocaleString("en-US");
+console.log(String.fromCharCode(964,961,940,960,949,950,945)+": four-footed.");
+</script>
+</body>
+</html>

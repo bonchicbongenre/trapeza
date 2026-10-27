@@ -1,0 +1,49 @@
+What itsthefloor.fyi does. A golf pass must keep every line true.
+
+ 1. A new continuous floor on every visit, and on "another floor": bumps, waves,
+    a hill, or a saddle.
+ 2. The plan shows the floor in three celadon washes by height (low qingbai, middle
+    Ru, high Longquan) with faint ink contours every 0.012 of a foot's reach.
+ 3. The table is a regular top with 3, 4, 5 or 6 feet, chosen by the leg buttons
+    (the chosen one is pressed). Feet sit at the corners' directions, at radius 1;
+    the top reaches 1.12.
+ 4. Dragging turns it, as do the arrow keys (half a degree a press). Turning eases.
+ 5. The table rests on a triangle of feet that leaves every foot on or above the
+    floor and holds the centre. With two such triangles it rocks between them as a
+    leaned-on table does: smoothly, lingering a little at each rest. The page's
+    clock runs at five sixths of real time, so everything happens as it would, a
+    little slower: about 2.3 s there and back, a fall from the table about 0.28 s. With reduced motion it rests on the first. No foot ever goes
+    below the floor.
+ 6. From above, the top is shaded by its tilt: a light wash on the high side,
+    darker and more opaque toward the low side, deeper with steeper tilt, never
+    opaque. A foot is filled when it touches, hollow when it is more than 0.004
+    above the floor in either resting state.
+ 7. Two cameras, a and b, each a short line and a letter on the plan, on the side
+    it looks from; they turn with the table. Their elevations show the floor's
+    section at every foot's depth, back to front, each foot on its own ground; the
+    legs as square posts perpendicular to the top, leaning with its tilt, the foot's
+    bottom showing when the table tips away; the top as an opaque slab showing its
+    top or its underside, whichever faces the camera. Grounds, legs and marbles are
+    drawn back to front, and each is hidden by exactly the part of the slab nearer
+    the camera than it, so nothing appears or vanishes except by moving. Heights are
+    drawn at twice their size, and the table is one rigid piece in that drawing. The ground slices belong to the feet, so the floor
+    holds still; a marble on the floor carries a short line of its own ground.
+ 8. A screen reader hears "It is still.", "It rocks.", "One foot is in the air."
+    or "N feet are in the air."
+ 9. The label gives the page's own size, read live. The console gives the Greek
+    word for table, and what it means.
+10. Colours come from the house tokens; a missing token falls back to ink or
+    paper. Dark mode follows the system. Resizing redraws.
+11. Marbles, at true size (16 mm, a reach taken as 40 cm). Clicking the plan drops
+    one just there, onto the top or the floor; "drop a marble" drops one somewhere
+    on the top. Each drop adds one. A marble rolls downhill at five-sevenths of
+    gravity times the slope, against rolling resistance (half a percent of
+    gravity) that holds it still on a slope gentler than about 0.4 degrees; it
+    rides with the table when the table turns, falls off the edge onto the floor,
+    rolls on until it rests in a hollow or leaves the map. Marbles knock into one
+    another. A marble is Jun blue on the table and Jun crimson once it has left
+    it, in every view. A screen reader hears how many are on the table, rolling,
+    resting, and gone.
+12. Each elevation is a camera with a frame: nothing in it is drawn outside its
+    panel, and a marble out of shot is simply not in that view.
+13. The favicon is the table from above, in amber, lighter on dark tab bars.
