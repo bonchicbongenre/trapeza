@@ -158,10 +158,14 @@ function elevation(p,plane,e,X,Y,w,tag){const s=w/2.8,cx=X+w/2,leg=.6*s,lw=.085*
   // the feet, and the marbles in shot, back to front
   for(const[r,b]of[...p.map(r=>[r]),...balls.map(b=>[at(b),b]).filter(([r])=>abs(r[0]*e[0]+r[1]*e[1])<1.42)].sort((i,j)=>deep(j[0])-deep(i[0]))){
     const dk=deep(r),near=[];
-    // what stands here is hidden by the part of the top nearer the camera than it
-    V.forEach((A,i)=>{const B=V[(i+1)%V.length],a=deep(A)-dk,b=deep(B)-dk;if(a<0)near.push(A);
-      if(a*b<0)near.push([A[0]+(B[0]-A[0])*a/(a-b),A[1]+(B[1]-A[1])*a/(a-b)])});
-    x.save();if(near.length){frame();trace(x,seen(near));x.clip("evenodd")}
+    // what stands here is hidden by the part of the top nearer the camera than it, and by
+    // that part's outline too: around the top's own corners the hidden shape reaches half
+    // the line's width further (growing in as a corner comes forward of this depth, so
+    // nothing jumps); where the top is cut, at this depth, no line is drawn
+    V.forEach((A,i)=>{const B=V[(i+1)%V.length],a=deep(A)-dk,b=deep(B)-dk;if(a<0)near.push([A,min(.6,-12*a)]);
+      if(a*b<0)near.push([[A[0]+(B[0]-A[0])*a/(a-b),A[1]+(B[1]-A[1])*a/(a-b)],0])});
+    x.save();if(near.length){frame();trace(x,hull(near.flatMap(([r,g])=>[up(r,leg),up(r,leg+.07*s)]
+      .flatMap(([a,b])=>[[a-g,b-g],[a+g,b-g],[a+g,b+g],[a-g,b+g]]))));x.clip("evenodd")}
     // a marble: on the top, falling from its edge, or on the floor, where it carries
     // only a short line of its own ground, so the floor stays still
     if(b){const tm=r[0]*e[0]+r[1]*e[1],fy=Y-f(r[0],r[1])*2*s,T=up(r,leg+.07*s),q=b.on==1?(b.t/b.T)**2:b.on?1:0;
