@@ -274,8 +274,9 @@ addEventListener("resize",size);
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change",size);
 another();size();requestAnimationFrame(draw);
 
-const nav=performance.getEntriesByType("navigation")[0];
-$("self").textContent=(nav&&nav.decodedBodySize||document.documentElement.outerHTML.length).toLocaleString("en-US");
+// the page's own size: it asks for itself and counts what comes back (a browser may
+// report only the compressed size)
+fetch(location.pathname).then(r=>r.arrayBuffer()).then(b=>$("self").textContent=b.byteLength.toLocaleString("en-US"));
 console.log(String.fromCharCode(964,961,940,960,949,950,945)+": four-footed.");
 </script>
 </body>
