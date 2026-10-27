@@ -30,7 +30,9 @@ What itsthefloor.fyi does. A golf pass must keep every line true.
     holds still; a marble on the floor carries a short line of its own ground.
  8. A screen reader hears "It is still.", "It rocks.", "One foot is in the air."
     or "N feet are in the air."
- 9. The label gives the page's own size, read live. The console gives the Greek
+ 9. The label gives the page's own size, read live, and one line: "Turn it." The
+    title (the tab, and any preview of a link) is "It's not your table that's
+    wobbly." The console gives the Greek
     word for table, and what it means.
 10. Colours come from the house tokens; a missing token falls back to ink or
     paper. Dark mode follows the system. Resizing redraws.
