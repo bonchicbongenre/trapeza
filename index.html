@@ -6,7 +6,7 @@
 <title>It&rsquo;s not your table that&rsquo;s wobbly.</title>
 <meta name="description" content="It&rsquo;s not your table that&rsquo;s wobbly.">
 <link rel="icon" href="favicon.svg">
-<link rel="stylesheet" href="tokens.css?4">
+<link rel="stylesheet" href="tokens.css?5">
 <style>
 body{margin:0;padding:3rem 16px 1.4rem;min-height:100svh;box-sizing:border-box;display:flex;flex-direction:column;background:var(--paper);color:var(--ink);font:19px/1.5 var(--book);font-variant-numeric:oldstyle-nums}
 main,.by{width:100%;max-width:68rem;margin:0 auto}
@@ -37,6 +37,7 @@ a{color:var(--amber-accent);text-underline-offset:.15em}
 <span id="legs"><button>3</button><button aria-pressed="true">4</button><button>5</button><button>6</button></span>
 <button id="again">another floor</button>
 <button id="marble">drop a marble</button>
+<button id="theme" hidden>dark</button>
 </nav>
 <p class="sr" id="s" aria-live="polite"></p>
 <div class="label">
@@ -53,7 +54,7 @@ a{color:var(--amber-accent);text-underline-offset:.15em}
 const{PI:P,sin,cos,abs,hypot,min,max,round,exp,sqrt,pow,atan2,random}=Math,fl=Math.floor,
   $=i=>document.getElementById(i),c=$("c"),x=c.getContext("2d"),col={},C=k=>col["--"+k],
   calm=matchMedia("(prefers-reduced-motion: reduce)").matches;
-let n=4,th=0,to=0,drag=null,press=null,f,W,E,CW,CH,wide,dpr,map,said,balls=[],last=0,gone=0;
+let n=4,th=0,to=0,drag=null,press=null,f,W,E,CW,CH,wide,dpr,map,said,balls=[],last=0,gone=0,old,t0;
 
 // Floors. Each is continuous, which is all the theorem asks of a floor.
 const rnd=a=>(random()*2-1)*a,
@@ -260,7 +261,12 @@ function draw(wall){
       (onT?" "+onT+(onT>1?" marbles are":" marble is")+" on the table.":"")+(loose?" "+loose+" rolling on the floor.":"")+
       (still?" "+still+(still>1?" rest":" rests")+" in a hollow.":"")+(gone?" "+gone+" rolled away.":"");
   if(state!==said)$("s").textContent=said=state;
+  // a change of theme: the drawing as it was, laid over the new one and let go
+  if(old){const k=(wall-t0)/500;if(k>=1||old.width!=c.width||old.height!=c.height)old=null;
+    else{x.setTransform(1,0,0,1,0,0);x.globalAlpha=1-ease(k);x.drawImage(old,0,0);x.globalAlpha=1}}
   requestAnimationFrame(draw)}
+// the curve the page's own colours fade along, CSS's "ease": cubic-bezier(.25,.1,.25,1)
+function ease(k){let a=0,b=1,s;for(let i=0;i<20;i++){s=(a+b)/2;.75*s*(1-s)+s*s*s<k?a=s:b=s}return s*(.3*(1-s)*(1-s)+3*s*(1-s)+s*s)}
 
 const ang=e=>{const r=c.getBoundingClientRect();return atan2(r.top+W/2-e.clientY,e.clientX-r.left-W/2)},
   legs=document.querySelectorAll("#legs button");
@@ -277,8 +283,17 @@ $("again").onclick=another;
 // the button drops one somewhere on the top
 $("marble").onclick=()=>{const a=random()*2*P,r=sqrt(random())*.9*1.12*cos(P/n);balls.push({on:0,u:r*cos(a),v:r*sin(a),vu:0,vv:0})};
 addEventListener("resize",size);
-matchMedia("(prefers-color-scheme: dark)").addEventListener("change",size);
 another();size();requestAnimationFrame(draw);
+
+// theme: the system's, until the visitor turns it; nothing is kept. It fades over half
+// a second, as the house's colours do: the drawing keeps a copy of itself to fade from.
+const sys=matchMedia("(prefers-color-scheme: dark)"),T=$("theme");let theme;
+const dark=()=>theme?theme=="dark":sys.matches,turn=()=>T.textContent=dark()?"light":"dark",
+  recolour=()=>{old=document.createElement("canvas");old.width=c.width;old.height=c.height;
+    old.getContext("2d").drawImage(c,0,0);t0=performance.now();colours();paint()};
+sys.addEventListener("change",()=>{if(!theme){turn();recolour()}});
+T.onclick=()=>{document.documentElement.dataset.theme=theme=dark()?"light":"dark";turn();recolour()};
+turn();T.hidden=false;
 
 // the page's own size: it asks for itself and counts what comes back (a browser may
 // report only the compressed size)

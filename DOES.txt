@@ -35,7 +35,10 @@ What itsthefloor.fyi does. A golf pass must keep every line true.
     wobbly." The console gives the Greek
     word for table, and what it means.
 10. Colours come from the house tokens; a missing token falls back to ink or
-    paper. Dark mode follows the system. Resizing redraws.
+    paper. Dark mode follows the system until the theme button ("dark" or
+    "light", last in the row of buttons) turns it for the visit; nothing is kept.
+    A change of theme fades over half a second along the house's curve, the
+    drawing with the page. Resizing redraws.
 11. Marbles, at true size (16 mm, a reach taken as 40 cm). Clicking the plan drops
     one just there, onto the top or the floor; "drop a marble" drops one somewhere
     on the top. Each drop adds one. A marble rolls downhill at five-sevenths of
