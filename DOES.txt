@@ -21,15 +21,20 @@ What itsthefloor.fyi does. A golf pass must keep every line true.
     page draws nothing until something does.
  6. From above, the top is shaded by its tilt: a light wash on the high side,
     darker and more opaque toward the low side, deeper with steeper tilt, never
-    opaque. A foot is filled when it touches, hollow when it is more than 0.004
-    above the floor in either resting state. The table is rigid, its top 0.67
-    above its feet (legs 0.6, the top 0.07 thick), so tipped it leans: from above,
-    the top sits off its feet downhill by its height times its tilt, where it is.
+    opaque. The table is rigid, its top 0.67 above its feet (legs 0.6, the top 0.07
+    thick), so tipped it leans: from above, the top sits off its feet downhill by
+    its height times its tilt, where it is, and a side shows only where the tilt
+    turns it up into view, a step deeper. The legs show through the top: round,
+    0.085 across, each from its foot up to the top, leaning as the table leans.
+    Under each foot lies a soft shadow on the floor, darkest where it stands,
+    fading and widening as it lifts.
  7. Two cameras, a and b, each a short line and a letter on the plan, on the side
     it looks from; they turn with the table. Their elevations show the floor's
-    section at every foot's depth, back to front, each foot on its own ground; the
-    legs as square posts perpendicular to the top, leaning with its tilt, the foot's
-    bottom showing when the table tips away; the top as an opaque slab showing its
+    section at every foot's depth, back to front, each foot on its own ground with
+    its shadow as the plan has it, seen nearly edge-on (a soft darkening of the
+    ground just under it); the legs round, perpendicular to the top, leaning with
+    its tilt, a lifted foot's round end showing when the table tips away; the top
+    as an opaque slab showing its
     top or its underside, whichever faces the camera, shaded along its tilt by the
     plan's own ramp, the sides and underside a little deeper. Grounds, legs,
     marbles, eggs and pools are drawn back to front, and each is hidden by exactly
@@ -59,7 +64,8 @@ What itsthefloor.fyi does. A golf pass must keep every line true.
 11. Marbles, at true size: glass spheres 16 mm across, 5.4 g (a reach is taken
     as 40 cm). Clicking the plan lays one just there, on the top or the floor;
     "drop a marble" lays one somewhere on the top. Each lays one more, at rest,
-    just touching. One time in twenty it is an egg (item 16).
+    just touching what it is laid on; where something already lies, at the
+    nearest clear place beside it. One time in thirty it is an egg (item 16).
 12. One world moves them all: rigid bodies in their true shapes under gravity,
     and, wherever two things touch (two bodies, a body and the floor, the top or
     a leg), a push that keeps them from passing into each other and gives back a

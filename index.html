@@ -154,8 +154,8 @@ function ramp(P,Q,R,sp,sq,sr,T,deeper){const paper=C("paper#"),
 // An elevation: a camera on the table's own axis, so it turns with the table. The
 // drawing runs along e; the camera looks along d from its far side, within its frame.
 // All is projected from where it is: the top a slab, drawn first; then back to front
-// the floor's section at each foot's depth, the legs (square posts perpendicular to the
-// top), and the marbles, each kept behind whatever part of the slab is nearer than it.
+// the floor's section at each foot's depth, the legs (round, perpendicular to the top),
+// and the bodies and pools, each kept behind whatever part of the slab is nearer than it.
 // Heights are drawn at twice their size, and the table is one rigid piece in that
 // drawing: its legs lean with its tilt, and the top is carried up their axis.
 function elevation(p,plane,e,X,Y,w,tag){const s=w/2.8,cx=X+w/2,leg=.6*s,lw=.085*s,d=[-e[1],e[0]],done={},
@@ -193,15 +193,16 @@ function elevation(p,plane,e,X,Y,w,tag){const s=w/2.8,cx=X+w/2,leg=.6*s,lw=.085*
       x.beginPath();trace(x,seen(V));x.closePath();x.lineWidth=1.2;x.strokeStyle=C("amber-base");x.stroke();
       x.beginPath();trace(x,face);x.closePath();
       x.fillStyle=ramp(up([0,0],hf),up([1,0],hf),up([0,1],hf),.5,sv([1,0]),sv([0,1]),T,rise?0:.25);x.fill();x.lineWidth=1;x.stroke()},
-    // a leg: a square post from its foot up to the underside. A foot on the floor sits
-    // flush on its own ground; a foot in the air keeps its square end, and with the
-    // table tipped away from the camera that end shows, in the underside's shade.
+    // a leg: round, from its foot up to the underside. A foot on the floor sits flush on
+    // its own ground; a foot in the air shows the near rim of its round end, and with
+    // the table tipped away from the camera the whole end, in the underside's shade.
     post=r=>{const F=up(r,0),T=up(r,leg),a=lw/2/nn,b=-lw/2*ke/nn,dk=deep(r),
-        flush=(plane[0]*r[0]+plane[1]*r[1]+plane[2]-f(r[0],r[1]))*2*s<1;
-      x.beginPath();trace(x,[[F[0]-a,flush?gy((F[0]-a-cx)/s,dk):F[1]-b],[F[0]+a,flush?gy((F[0]+a-cx)/s,dk):F[1]+b],[T[0]+a,T[1]+b],[T[0]-a,T[1]-b]]);x.closePath();
+        flush=(plane[0]*r[0]+plane[1]*r[1]+plane[2]-f(r[0],r[1]))*2*s<1,end=t=>[F[0]+a*cos(t),F[1]+b*cos(t)+dz*sin(t)];
+      x.beginPath();
+      if(flush)trace(x,[[F[0]+a,gy((F[0]+a-cx)/s,dk)],[F[0]-a,gy((F[0]-a-cx)/s,dk)]]);else for(let i=0;i<=12;i++)x.lineTo(...end(P*i/12));
+      x.lineTo(T[0]-a,T[1]-b);x.lineTo(T[0]+a,T[1]+b);x.closePath();
       x.fillStyle=C("amber-wash");x.fill();x.lineWidth=1.1;x.strokeStyle=C("amber-base");x.stroke();
-      if(!rise&&!flush&&dz>.3){x.beginPath();trace(x,[[F[0]-a,F[1]-b+dz],[F[0]+a,F[1]+b+dz],[F[0]+a,F[1]+b-dz],[F[0]-a,F[1]-b-dz]]);
-        x.closePath();x.fillStyle=mix(.6);x.fill();x.stroke()}};
+      if(!rise&&!flush&&dz>.3){x.beginPath();for(let i=0;i<24;i++)x.lineTo(...end(P*i/12));x.closePath();x.fillStyle=mix(.6);x.fill();x.stroke()}};
   slab();
   // the feet, the bodies and the pools in shot, back to front
   for(const[r,b]of[...p.map(r=>[r]),...[...balls.map(b=>[b.x,b]),...pools.map(q=>[pw(q,0,0),q])]
@@ -252,6 +253,12 @@ function elevation(p,plane,e,X,Y,w,tag){const s=w/2.8,cx=X+w/2,leg=.6*s,lw=.085*
           x.fillStyle=C(k<2?"ru-wash":"longquan-wash");x.fillRect(X,Y-.6*w,w,max(0,yk-Y+.6*w))}x.restore();
         // the ridge line lives inside its own ground, so none of it shows past the green
         x.save();x.clip(ground);x.beginPath();trace(x,line);x.lineWidth=2;x.strokeStyle=C("ink");x.stroke();x.restore()}
+      // the foot's shadow on the floor, as the plan has it, seen nearly edge-on: a soft
+      // darkening of the ground just under it, darkest where it stands
+      const g=max(0,plane[0]*r[0]+plane[1]*r[1]+plane[2]-f(r[0],r[1])),R=(.09+3*g)*s,F=[px(r),gy(tm,dk)],ink=C("ink#").join(","),
+        sh=x.createRadialGradient(0,0,0,0,0,R);
+      sh.addColorStop(0,"rgba("+ink+","+(.5*exp(-g/.006)).toFixed(3)+")");sh.addColorStop(.45,"rgba("+ink+","+(.3*exp(-g/.006)).toFixed(3)+")");sh.addColorStop(1,"rgba("+ink+",0)");
+      x.save();x.translate(F[0],F[1]);x.scale(1,.4);x.beginPath();x.rect(-R,0,2*R,R);x.fillStyle=sh;x.fill();x.restore();
       post(r)}
     x.restore()}
   x.fillStyle=C("ink");x.fillText(tag,X,Y-.52*w);x.restore()}
@@ -344,22 +351,24 @@ function crack(o,p){const q=toF(o.M,sub(p,o.x)),c=t=>max(.005-EL/2,min(EL/2-.005
 
 // The table, rigid: turned by t, then tipped onto the plane of its feet about that plane's
 // point over the centre. Its parts, in its own frame: the top (-1), the regular n-gon
-// reaching 1.12 between heights 0.6 and 0.67; the legs (0 to n-1), square posts 0.085
-// across from the feet up to the top. Each part's support (its point furthest along u).
+// reaching 1.12 between heights 0.6 and 0.67; the legs (0 to n-1), round, 0.085 across,
+// from the feet (small glides on their axes) up to the top. Each part's support (its point
+// furthest along u).
 function pose(plane,t){const m=unit([-plane[0],-plane[1],1]),s=hypot(m[0],m[1]),k=s>1e-12?[-m[1]/s,m[0]/s,0]:[1,0,0],a=atan2(s,m[2]);
   return{O:[0,0,plane[2]],M:[[cos(t),sin(t),0],[-sin(t),cos(t),0],[0,0,1]].map(e=>rot(e,k,a)),plane,t}}
 const corner=k=>{const a=P/2+2*P*k/n;return[1.12*cos(a),1.12*sin(a)]},
   foot=k=>{const a=P/2+2*P*k/n;return[cos(a),sin(a)]},
   part=k=>k<0?u=>{let b=-1/0,q;for(let j=0;j<n;j++){const c=corner(j),d=u[0]*c[0]+u[1]*c[1];if(d>b){b=d;q=c}}return[q[0],q[1],u[2]>0?.67:.6]}
-    :u=>{const c=foot(k);return[c[0]+(u[0]<0?-.0425:.0425),c[1]+(u[1]<0?-.0425:.0425),u[2]>0?.6:0]},
+    :u=>{const c=foot(k),l=hypot(u[0],u[1])||1;return[c[0]+.0425*u[0]/l,c[1]+.0425*u[1]/l,u[2]>0?.6:0]},
   // the height of the plane of the top over a point
   topZ=X=>{const m=tp.M[2],Q=add(tp.O,mul(m,.67));return Q[2]-(m[0]*(X[0]-Q[0])+m[1]*(X[1]-Q[1]))/m[2]};
 // the point of part k nearest q (in the table's frame), and whether q is inside it
 function nigh(k,q){
-  if(k>=0){const c=[...foot(k),.3],w=[.0425,.0425,.3],p=q.map((v,i)=>max(c[i]-w[i],min(c[i]+w[i],v)));
-    if(p.some((v,i)=>v!=q[i]))return[p,0];
-    let i=0,s=1,b=1/0;for(let j=0;j<3;j++)for(const t of[-1,1]){const g=abs(c[j]+t*w[j]-q[j]);if(g<b){b=g;i=j;s=t}}
-    p[i]=c[i]+s*w[i];return[p,1]}
+  if(k>=0){const c=foot(k),dx=q[0]-c[0],dy=q[1]-c[1],r=hypot(dx,dy),g=r>.0425?.0425/r:1,z=max(0,min(.6,q[2]));
+    if(r>.0425||z!=q[2])return[[c[0]+dx*g,c[1]+dy*g,z],0];
+    // inside: out by the nearest of the side, the foot and the top
+    const a=.0425-r,b=q[2],t=.6-q[2],e=.0425/(r||1);
+    return[a<b&&a<t?[c[0]+(r?dx:1)*e,c[1]+dy*e,q[2]]:b<t?[q[0],q[1],0]:[q[0],q[1],.6],1]}
   let b=1/0,e,o=1;
   for(let j=0;j<n;j++){const A=corner(j),B=corner(j+1),ex=B[0]-A[0],ey=B[1]-A[1],qx=q[0]-A[0],qy=q[1]-A[1],
       t=max(0,min(1,(qx*ex+qy*ey)/(ex*ex+ey*ey))),g=(qx-t*ex)**2+(qy-t*ey)**2;
@@ -421,11 +430,12 @@ function meet(A,B,n,pa,pb,d,V,W,key,e,h){
     kick(A,J,ra);twirl(A,T);if(B){kick(B,mul(J,-1),rb);twirl(B,mul(T,-1))}}
   return c}
 // One push at a contact: mode 0 keeps the gap, and parts any overlap by a fifth a step (at
-// most a reach a second); mode 1 keeps the gap without the parting; mode 2 is the bounce.
+// most 4 cm/s, so nothing is flung); mode 1 keeps the gap without the parting; mode 2 is
+// the bounce.
 // Then friction, within MU of the push; rolling and twist, within their levers.
 function push(c,mode){const{A,B,n,ra,rb,h}=c,rel=()=>sub(add(A.v,crs(A.w,ra)),B?add(B.v,crs(B.w,rb)):c.V),wr=()=>sub(A.w,B?B.w:c.W);
   if(mode==2){if(!(c.v0<-VT&&c.ln>0))return;c.hit=1}
-  const g=mode==1?c.dn:c.d,tg=mode==2?-c.e*c.v0:g>0?-g/h:mode?0:min(1,.2*max(0,-g-.0005)/h),
+  const g=mode==1?c.dn:c.d,tg=mode==2?-c.e*c.v0:g>0?-g/h:mode?0:min(.1,.2*max(0,-g-.0005)/h),
     l=max(0,c.ln-c.kn*(dot3(rel(),n)-tg)),dl=l-c.ln;
   c.ln=l;kick(A,mul(n,dl),ra);if(B)kick(B,mul(n,-dl),rb);
   if(mode==2)return;
@@ -517,17 +527,23 @@ function advance(a,b){const h=STEP/1000,c=k=>[...corner(k),.67],N=balls.length,
   const kept=balls.filter(o=>!o.broke);balls=kept.filter(o=>abs(o.x[0])<=1.6&&abs(o.x[1])<=1.6&&o.x[2]>-1);gone+=kept.length-balls.length}
 
 // Something laid at rest, just touching what it is laid on -- the floor at (x,y), or the
-// top at (u,v) of its own frame: a marble, or one time in twenty an egg on its side,
+// top at (u,v) of its own frame: a marble, or one time in thirty an egg on its side,
 // turned anyhow. Some eggs are boiled and some are not, and how the universe lays them so
 // remains a mystery.
-function lay(x0,y0,top){if(!tp)return;const k=+(random()<.05),raw=k&&random()<.5,
+function lay(x0,y0,top){if(!tp)return;const k=+(random()<1/30),raw=k&&random()<.5,
     b={id:ids++,k,raw,v:[0,0,0],L:[0,0,0],H:[0,0,0],w:[0,0,0],m:k?EGG.m:MM,I:k?raw?EGG.shell:EGG.boiled:0,C:raw?EGG.core:0,
       e:k?.3:.9,tw:k?.0007:.00005,off:!top,z:0,q:0,paint:k?PAINT:[],cracks:[]},
     u=top?tp.M[2]:[0,0,1],a=random()*2*P,ax=top?add(mul(tp.M[0],cos(a)),mul(tp.M[1],sin(a))):[cos(a),sin(a),0],
     e0=rot(u,ax,random()*2*P),S=top?add(tp.O,toW(tp.M,[x0,y0,.67])):[x0,y0,f(x0,y0)];
-  b.M=[e0,crs(ax,e0),ax];b.x=add(S,mul(u,.1));
-  if(top)b.x=add(b.x,mul(u,dot3(sub(S,surf(b,mul(u,-1))),u)));
-  else for(let i=0;i<3;i++){const g=ground(b);b.x=sub(b.x,mul(g.n,g.d))}
+  b.M=[e0,crs(ax,e0),ax];
+  // set down at (p,q), just touching what it is laid on; and is it clear of everything?
+  const put=(p,q)=>{const S=top?add(tp.O,toW(tp.M,[p,q,.67])):[p,q,f(p,q)];b.x=add(S,mul(u,.1));
+      if(top)b.x=add(b.x,mul(u,dot3(sub(S,surf(b,mul(u,-1))),u)));else for(let i=0;i<3;i++){const g=ground(b);b.x=sub(b.x,mul(g.n,g.d))}},
+    clear=()=>balls.every(o=>{if(len(sub(b.x,o.x))>bound(b)+bound(o)+.001)return 1;
+      if(!b.k&&!o.k)return len(sub(b.x,o.x))-2*RAD>.0004;const z=gjk(v=>core(b,v),v=>core(o,v));return z&&z.d-rim(b)-rim(o)>.0004});
+  // where something already lies, beside it: the nearest clear place, on rings 1.6 mm apart
+  out:for(let i=0;i<80;i++)for(let j=0,J=max(1,6*i);j<J;j++){const a=2*P*j/J,p=x0+.004*i*cos(a),q=y0+.004*i*sin(a);
+    if(top&&!onTop(p,q))continue;put(p,q);if(clear())break out}
   balls.push(b);wake()}
 // a click on the plan: on the top if the top is there, else on the floor
 function drop(u,v){if(!tp)return;const q=toF(tp.M,sub([u,v,topZ([u,v])],tp.O));
@@ -602,12 +618,25 @@ function draw(wall){
   x.setTransform(dpr,0,0,dpr,0,0);x.clearRect(0,0,CW,CH);x.drawImage(map,0,0,W,W);
   for(const q of pools)if(!q.on)pond(q,pl,s);
   things(false);
-  // the top from above, where the rigid top is, in its tone: translucent over the floor
+  // the legs from above, seen through the top: each round, from its foot up to the top,
+  // leaning as the table leans; and under each foot a soft shadow on the floor, darkest
+  // where it stands and fading and widening as it lifts
+  const ink=C("ink#").join(",");
+  p.forEach((r,m)=>{const g=max(0,plane[0]*r[0]+plane[1]*r[1]+plane[2]-h[m]),F=at([...foot(m),0]),R=(.09+3*g)*s,
+      sh=x.createRadialGradient(F[0],F[1],0,F[0],F[1],R),q=[];
+    sh.addColorStop(0,"rgba("+ink+","+(.5*exp(-g/.006)).toFixed(3)+")");sh.addColorStop(.45,"rgba("+ink+","+(.3*exp(-g/.006)).toFixed(3)+")");sh.addColorStop(1,"rgba("+ink+",0)");
+    x.beginPath();x.arc(F[0],F[1],R,0,7);x.fillStyle=sh;x.fill();
+    for(const z of[0,.6])for(let i=0;i<24;i++)q.push(at([foot(m)[0]+.0425*cos(P*i/12),foot(m)[1]+.0425*sin(P*i/12),z]));
+    x.beginPath();trace(x,hull(q));x.closePath();x.fillStyle=C("amber-wash");x.fill();x.lineWidth=1;x.strokeStyle=C("amber-base");x.stroke()});
+  // the top from above, where the rigid top is, in its tone: translucent over the floor; its
+  // sides, where its tilt turns them up into view, a step deeper, as the elevations show them
+  for(let k=0;k<n;k++){const A=corner(k),B=corner(k+1),o=[B[1]-A[1],A[0]-B[0]];
+    if(tp.M[0][2]*o[0]+tp.M[1][2]*o[1]<=0)continue;
+    x.beginPath();trace(x,[at([...A,.67]),at([...B,.67]),at([...B,.6]),at([...A,.6])]);x.closePath();x.fillStyle=C("amber-base");x.globalAlpha=.6;x.fill();x.globalAlpha=1}
   trace(top,Array.from({length:n},(_,k)=>at([...corner(k),.67])));top.closePath();
   const gr=x.createLinearGradient(gc[0]+T.u[0]*K,gc[1]-T.u[1]*K,gc[0]-T.u[0]*K,gc[1]+T.u[1]*K);
   gr.addColorStop(0,"rgba("+T.hi+")");gr.addColorStop(1,"rgba("+T.lo.slice(0,3)+","+T.lo[3].toFixed(3)+")");
   x.fillStyle=gr;x.fill(top);x.strokeStyle=C("amber-base");x.lineWidth=1.5;x.stroke(top);
-  p.forEach((r,m)=>{const F=at([...foot(m),0]);x.beginPath();x.arc(F[0],F[1],5.5,0,7);x.fillStyle=gap[m]>.004?C("paper"):C("amber-base");x.fill();x.stroke()});
   for(const q of pools)if(q.on)pond(q,pl,s);
   things(true);
   x.font=col.font;camera(ea,o,s,"a");camera(eb,o,s,"b");
