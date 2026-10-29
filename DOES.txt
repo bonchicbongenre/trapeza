@@ -22,23 +22,31 @@ What itsthefloor.fyi does. A golf pass must keep every line true.
  6. From above, the top is shaded by its tilt: a light wash on the high side,
     darker and more opaque toward the low side, deeper with steeper tilt, never
     opaque. A foot is filled when it touches, hollow when it is more than 0.004
-    above the floor in either resting state.
+    above the floor in either resting state. The table is rigid, its top 0.67
+    above its feet (legs 0.6, the top 0.07 thick), so tipped it leans: from above,
+    the top sits off its feet downhill by its height times its tilt, where it is.
  7. Two cameras, a and b, each a short line and a letter on the plan, on the side
     it looks from; they turn with the table. Their elevations show the floor's
     section at every foot's depth, back to front, each foot on its own ground; the
     legs as square posts perpendicular to the top, leaning with its tilt, the foot's
     bottom showing when the table tips away; the top as an opaque slab showing its
     top or its underside, whichever faces the camera, shaded along its tilt by the
-    plan's own ramp, the sides and underside a little deeper. Grounds, legs and
-    marbles are drawn back to front, and each is hidden by exactly the part of the
-    slab nearer the camera than it, so nothing appears or vanishes except by
-    moving. Heights are drawn at twice their size, and the table is one rigid
-    piece in that drawing. The ground slices belong to the feet, so the floor
-    holds still; a marble on the floor carries a short line of its own ground. Each
+    plan's own ramp, the sides and underside a little deeper. Grounds, legs,
+    marbles, eggs and pools are drawn back to front, and each is hidden by exactly
+    the part of the slab nearer the camera than it, so nothing appears or vanishes
+    except by moving. The floor's relief is drawn at twice its size, and the table
+    is one rigid piece in that drawing. A body keeps its true size and shape: it
+    is drawn from the point it rests on, by the floor's map or the table's (between
+    them in the air, as it is between them), turned by the difference between the
+    drawn slope there and the true one, so it sits on the drawn surface as it sits
+    on the true one. The ground slices belong to the feet, so the floor holds
+    still; a body on the floor carries a short line of its own ground. Each
     ground is in the plan's three washes, banded at the same heights, so a colour
     is a height in every view, as the top's shade is.
  8. A screen reader hears "It is still.", "It rocks.", "One foot is in the air."
-    or "N feet are in the air."
+    or "N feet are in the air.", then what is on the table ("2 marbles and 1 egg
+    are on the table."), how many roll on the floor, rest in a hollow, rolled
+    away, broke, and are cracked.
  9. The label gives the page's own size, read live, and one line: "Turn it." The
     title (the tab, and any preview of a link) is "It's not your table that's
     wobbly." The console gives the Greek
@@ -48,25 +56,52 @@ What itsthefloor.fyi does. A golf pass must keep every line true.
     "light", the last word in the row of buttons) turns it for the visit; nothing
     is kept. A change of theme fades over half a second along the house's curve,
     the drawing with the page. Resizing redraws.
-11. Marbles, at true size (16 mm, a reach taken as 40 cm). Clicking the plan drops
-    one just there, onto the top or the floor; "drop a marble" drops one somewhere
-    on the top. Each drop adds one. A marble rolls downhill at five-sevenths of
-    gravity times the slope, against rolling resistance (half a percent of
-    gravity) that holds it still on a slope gentler than about 0.4 degrees; it
-    rides with the table when the table turns, falls off the edge onto the floor,
-    rolls on until it rests in a hollow or leaves the map. Marbles knock into one
-    another. A marble is one glaze on the table and another once it has left it,
-    in every view: Jun blue and crimson at first (item 14). A screen reader hears how many are on the table, rolling,
-    resting, and gone.
-12. Each elevation is a camera with a frame: nothing in it is drawn outside its
-    panel, and a marble out of shot is simply not in that view.
-13. The favicon is the table from above, in amber, lighter on dark tab bars.
-14. A dot after the theme button, last in the row, turns the glazes. The floor, the
+11. Marbles, at true size: glass spheres 16 mm across, 5.4 g (a reach is taken
+    as 40 cm). Clicking the plan lays one just there, on the top or the floor;
+    "drop a marble" lays one somewhere on the top. Each lays one more, at rest,
+    just touching. One time in twenty it is an egg (item 16).
+12. One world moves them all: rigid bodies in their true shapes under gravity,
+    and, wherever two things touch (two bodies, a body and the floor, the top or
+    a leg), a push that keeps them from passing into each other and gives back a
+    fixed part of the speed they met at (glass on glass 0.9, on wood 0.6, egg
+    0.3; slower than 8 cm/s, nothing), Coulomb friction (0.4), rolling resistance
+    (a lever of 0.056 mm, so a marble holds still on a slope gentler than about
+    0.4 degrees), and the twist friction of the contact's patch. Contacts are
+    found between the true shapes. A marble rolls down a slope at five-sevenths of
+    gravity times it; on a turning table it rolls, gaining two-sevenths of what
+    the top beneath it gains, and does not simply ride; past an edge it rolls over
+    it and falls, bounces, rolls on until it rests in a hollow or leaves the map.
+    The table is driven, by hand and by the lean, and far heavier than what is on
+    it. The world moves in the page clock's steps, each cut into as many as 24 for
+    anything fast, enough that nothing moves more than 0.8 mm in one (up to 4.6
+    m/s); bodies that cannot touch within a step are stepped apart. A body still for half a second, on
+    nothing moving, rests until something wakes it. A marble or an egg is one
+    glaze on the table and another once it has left it, in every view: Jun blue
+    and crimson at first (item 15).
+13. Each elevation is a camera with a frame: nothing in it is drawn outside its
+    panel, and a body out of shot is simply not in that view.
+14. The favicon is the table from above, in amber, lighter on dark tab bars.
+15. A dot after the theme button, last in the row, turns the glazes. The floor, the
     table and the marbles each take one of the three families, and a press moves
     each to the next: celadon floor, amber table, Jun marbles (blue on the table,
     crimson off it); then a Jun floor, a Ru table, tenmoku marbles (rust and
     gold); then a tenmoku floor, a purple-splash table, celadon marbles (Longquan
-    and qingbai); and round again. The dot wears the middle glaze of the floor to
-    come; a screen reader hears that family's name. The drawing fades from one to
-    the next as it does for the theme; nothing is kept; without script there is
-    no dot.
+    and qingbai); and round again. Eggs wear the marbles' glazes, painted in the
+    wash of that family's middle glaze. The dot wears the middle glaze of the
+    floor to come; a screen reader hears that family's name. The drawing fades
+    from one to the next as it does for the theme; nothing is kept; without
+    script there is no dot.
+16. Eggs, at true size: a hen's egg, Hugelschaffer's curve turned about its axis,
+    57 mm long and 44 across, widest 3 mm toward the blunt end; a shell 0.35 mm
+    thick round its white and yolk, 62.9 g in all. Each is laid on its side, turned
+    anyhow, painted with two bands and a zigzag between them. Some eggs are boiled
+    and some are not, and how the universe lays them so remains a mystery; the
+    page does not say which. A boiled egg is one rigid body. A raw egg's shell
+    carries its liquid round its axis only by viscosity (a raw egg stopped and let
+    go turns again, for about a second), and across its axis partly by its walls,
+    as a spheroid of its proportions does, the rest by viscosity again. An egg
+    rolls in arcs, round the apex of the cone that touches it where it lies. Met
+    as hard as a fall of 1 cm onto a hard floor, it cracks where it was met; a raw
+    one met as hard as a fall of 20 cm breaks open. A broken egg's white lies
+    round its yolk, with bits of shell, where it broke; the pool spreads over half
+    a second as drawn, not as a liquid followed.

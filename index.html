@@ -60,7 +60,7 @@ const{PI:P,sin,cos,abs,hypot,min,max,round,exp,sqrt,pow,atan2,random}=Math,fl=Ma
   $=i=>document.getElementById(i),c=$("c"),x=c.getContext("2d"),col={},C=k=>col["--"+k],
   calm=matchMedia("(prefers-reduced-motion: reduce)").matches;
 let n=4,th=0,to=0,drag=null,press=null,f,W,E,CW,CH,wide,dpr,map,said,balls=[],gone=0,old,t0,lv=[0,1],
-  sim=null,asleep=false;
+  sim=null,asleep=false,tp=null;
 // the world's step, in milliseconds of the page's clock
 const STEP=1000/240;
 
@@ -75,7 +75,7 @@ const rnd=a=>(random()*2-1)*a,
     ()=>{const g=gauss(3,.015,[.3,.4]),u0=rnd(.8),v0=rnd(.8),a=.06+random()*.06;
       return(u,v)=>{const p=u-u0,q=v-v0;return a*exp(-(p*p+q*q)/1.6)+g(u,v)}},
     ()=>{const a=rnd(.05),b=rnd(.05),g=gauss(3,.03,[.3,.4]);return(u,v)=>a*u*v+b*(u*u-v*v)+g(u,v)}],
-  another=()=>{f=kinds[fl(random()*kinds.length)]();if(W)paint();wake()},
+  another=()=>{f=kinds[fl(random()*kinds.length)]();if(W)paint();carry();wake()},
   feet=a=>Array.from({length:n},(_,k)=>{const q=a+P/2+2*P*k/n;return[cos(q),sin(q)]}),
   trace=(t,pts)=>pts.forEach((q,i)=>t[i?"lineTo":"moveTo"](q[0],q[1]));
 
@@ -105,8 +105,8 @@ function rgb(s){const m=/oklch\(([\d.]+)(%?)\s+([\d.]+)\s+([\d.]+)/.exec(s);if(!
 const fams=[["qingbai","ru","longquan"],["crimson","junsplash","jun"],["gold","amber","rust"]];let g=0;
 function colours(){const cs=getComputedStyle(document.documentElement),bs=getComputedStyle(document.body),F=fams[g],T=fams[(g+2)%3][1],
     M=fams[(g+1)%3],as={"qingbai-wash":F[0]+"-wash","ru-wash":F[1]+"-wash","longquan-wash":F[2]+"-wash",
-    "amber-base":T+"-base","amber-wash":T+"-wash","jun-base":M[2]+"-base","crimson-base":M[0]+"-base"};
-  for(const t of["ink","paper","rule","amber-base","amber-wash","qingbai-wash","ru-wash","longquan-wash","jun-base","crimson-base"]){
+    "amber-base":T+"-base","amber-wash":T+"-wash","jun-base":M[2]+"-base","crimson-base":M[0]+"-base","junsplash-wash":M[1]+"-wash"};
+  for(const t of["ink","paper","rule","amber-base","amber-wash","qingbai-wash","ru-wash","longquan-wash","jun-base","crimson-base","junsplash-wash","gold-accent"]){
     let v=rgb(cs.getPropertyValue("--"+(as[t]||t)));if(!/\d/.test(v))v=rgb(/wash|paper/.test(t)?bs.backgroundColor:bs.color);
     col["--"+t]=v;col["--"+t+"#"]=v.match(/\d+/g).map(Number)}
   col.font="12px "+cs.getPropertyValue("--typewriter")}
@@ -168,6 +168,12 @@ function elevation(p,plane,e,X,Y,w,tag){const s=w/2.8,cx=X+w/2,leg=.6*s,lw=.085*
     deep=r=>r[0]*d[0]+r[1]*d[1],rad=max(2,RAD*s),
     // the floor, drawn, at t across the view and z deep
     gy=(t,z)=>Y-f(t*e[0]+z*d[0],t*e[1]+z*d[1])*2*s,
+    // a point of the world as this camera draws it: by the floor, its relief at twice its
+    // size and heights over it as they are; by the table, as part of that rigid piece;
+    // anywhere between, weighed by where between it is
+    mf=X=>{const z=f(X[0],X[1]);return[px(X),Y-(z+X[2])*s]},
+    mt=X=>{const q=toF(tp.M,sub(X,tp.O)),c=cos(tp.t),n=sin(tp.t);return up([q[0]*c-q[1]*n,q[0]*n+q[1]*c],q[2]*s)},
+    mid=(X,w)=>{const a=mf(X),b=mt(X);return[a[0]+(b[0]-a[0])*w,a[1]+(b[1]-a[1])*w]},
     frame=()=>{x.beginPath();x.rect(X,Y-.6*w,w,.72*w)},
     // the top's corners, and the slab over any part of it as seen: the outline of
     // that part's corners at both its faces
@@ -197,8 +203,9 @@ function elevation(p,plane,e,X,Y,w,tag){const s=w/2.8,cx=X+w/2,leg=.6*s,lw=.085*
       if(!rise&&!flush&&dz>.3){x.beginPath();trace(x,[[F[0]-a,F[1]-b+dz],[F[0]+a,F[1]+b+dz],[F[0]+a,F[1]+b-dz],[F[0]-a,F[1]-b-dz]]);
         x.closePath();x.fillStyle=mix(.6);x.fill();x.stroke()}};
   slab();
-  // the feet, and the marbles in shot, back to front
-  for(const[r,b]of[...p.map(r=>[r]),...balls.map(b=>[at(b),b]).filter(([r])=>abs(r[0]*e[0]+r[1]*e[1])<1.42)].sort((i,j)=>deep(j[0])-deep(i[0]))){
+  // the feet, the bodies and the pools in shot, back to front
+  for(const[r,b]of[...p.map(r=>[r]),...[...balls.map(b=>[b.x,b]),...pools.map(q=>[pw(q,0,0),q])]
+      .filter(([r,b])=>abs(r[0]*e[0]+r[1]*e[1])<1.42+(b.R||0))].sort((i,j)=>deep(j[0])-deep(i[0]))){
     const dk=deep(r),near=[];
     // what stands here is hidden by the part of the top nearer the camera than it, and by
     // that part's outline too: around the top's own corners the hidden shape reaches half
@@ -210,12 +217,30 @@ function elevation(p,plane,e,X,Y,w,tag){const s=w/2.8,cx=X+w/2,leg=.6*s,lw=.085*
       if(a*b<0)near.push([[A[0]+(B[0]-A[0])*a/(a-b),A[1]+(B[1]-A[1])*a/(a-b)],0])});
     x.save();if(near.length){frame();trace(x,hull(near.flatMap(([r,g])=>[up(r,leg),up(r,leg+.07*s)]
       .flatMap(([a,b])=>[[a-g,b-g],[a+g,b-g],[a+g,b+g],[a-g,b+g]]))));x.clip("evenodd")}
-    // a marble: on the top, falling from its edge, or on the floor, where it carries
-    // only a short line of its own ground, so the floor stays still
-    if(b){const tm=r[0]*e[0]+r[1]*e[1],fy=Y-f(r[0],r[1])*2*s,T=up(r,leg+.07*s),q=b.on==1?(b.t/b.T)**2:b.on?1:0;
-      if(b.on==2){x.beginPath();for(let i=0;i<=8;i++){const t=tm-.06+.015*i;x[i?"lineTo":"moveTo"](cx+t*s,gy(t,dk))}
-        x.lineWidth=1.5;x.strokeStyle=C("ink");x.stroke()}
-      dot(T[0]+(px(r)-T[0])*q,T[1]+(fy-T[1])*q-rad,rad,b)}
+    // a body: its lowest point drawn where the world's map puts it, the body round it at
+    // its true size; on the floor it carries only a short line of its own ground, so the
+    // floor stays still
+    const tm=r[0]*e[0]+r[1]*e[1],line=(a,b)=>{x.beginPath();for(let i=0;i<=8;i++){const t=a+(b-a)*i/8;x[i?"lineTo":"moveTo"](cx+t*s,gy(t,dk))}
+      x.lineWidth=1.5;x.strokeStyle=C("ink");x.stroke()};
+    // Drawn slopes are twice the true ones, so a body is turned by the difference about the
+    // point it rests on -- the floor's, or the top's, or between them as it is between them
+    // -- and sits on the drawn surface as it sits on the true one.
+    if(b&&!b.R){const L=surf(b,[0,0,-1]),u=(X,w)=>{const z=f(X[0],X[1]);return max(0,min(1,(X[2]-z)/(topZ(X)-z)))},w=u(L),q=1e-5,
+        nf=unit([f(L[0]-q,L[1])-f(L[0]+q,L[1]),f(L[0],L[1]-q)-f(L[0],L[1]+q),2*q]),m=unit(add(mul(nf,1-w),mul(tp.M[2],w))),
+        S=surf(b,mul(m,-1)),A=mid(S,u(S)),k=-(m[0]*e[0]+m[1]*e[1])/m[2],r=atan2(k,1)-atan2(2*k,1),cr=cos(r),sr=sin(r),
+        pt=X=>{const a=((X[0]-S[0])*e[0]+(X[1]-S[1])*e[1])*s,c=-(X[2]-S[2])*s;return[A[0]+a*cr-c*sr,A[1]+a*sr+c*cr]};
+      if(b.fl)line(tm-(b.k?EGG.R+.02:.06),tm+(b.k?EGG.R+.02:.06));
+      if(b.k)body(b,[d[0],d[1],0],pt);else{const c=pt(b.x),g=rad/(hypot(c[0]-A[0],c[1]-A[1])||1);dot(A[0]+(c[0]-A[0])*g,A[1]+(c[1]-A[1])*g,rad,b)}}
+    // a pool: the white a thin layer on its ground, the yolk a dome, the bits of shell
+    else if(b){const ts=edge(b).map(X=>X[0]*e[0]+X[1]*e[1]),t0=min(...ts),t1=max(...ts),g=spread(b),w=max(1.2,.008*s),
+        O=pw(b,0,0),on=t=>b.on?mt(add(O,[(t-tm)*e[0],(t-tm)*e[1],0])):[cx+t*s,gy(t,dk)],
+        Q=pw(b,b.y[0],b.y[1]),yk=on(Q[0]*e[0]+Q[1]*e[1]);
+      if(!b.on)line(t0-.03,t1+.03);
+      x.beginPath();for(let i=0;i<22;i++){const q=on(t0+(t1-t0)*(i<11?i:21-i)/10);x.lineTo(q[0],q[1]-(i<11?w:0))}
+      x.closePath();x.fillStyle=C("paper");x.fill();x.lineWidth=.8;x.strokeStyle=C("rule");x.stroke();
+      x.beginPath();x.ellipse(yk[0],yk[1]-w/2,.04*s*g,.03*s*g,0,P,2*P);x.closePath();x.fillStyle=C("gold-accent");x.fill();x.strokeStyle=C("ink");x.stroke();
+      x.lineWidth=2;x.strokeStyle=C(b.glaze?"crimson-base":"jun-base");
+      for(const c of b.bits){const t=tm+(c[0]*e[0]+c[1]*e[1])*g,q=on(t-.012),u=on(t+.012);x.beginPath();x.moveTo(q[0],q[1]-1);x.lineTo(u[0],u[1]-1);x.stroke()}}
     else{if(!done[dk.toFixed(3)]){done[dk.toFixed(3)]=1;
         const line=[],ground=new Path2D();
         for(let i=0;i<=56;i++){const t=-1.4+2.8*i/56;line.push([cx+t*s,gy(t,dk)])}
@@ -231,43 +256,320 @@ function elevation(p,plane,e,X,Y,w,tag){const s=w/2.8,cx=X+w/2,leg=.6*s,lw=.085*
     x.restore()}
   x.fillStyle=C("ink");x.fillText(tag,X,Y-.52*w);x.restore()}
 
-// Marbles, 16 mm across. A solid ball rolls down a slope at five-sevenths of gravity
-// times the slope; gravity is 24.5 reaches a second squared. A marble is on the table
-// (0), falling (1) or on the floor (2). On the table it rides in the table's own
-// frame; past the edge it falls; on the floor it rolls downhill until it rests in a
-// hollow, or leaves the map. Marbles knock into each other and lose a little each time.
-const RAD=.02;
-function at(b){return b.on?[b.u,b.v]:[b.u*cos(th)-b.v*sin(th),b.u*sin(th)+b.v*cos(th)]}
-// is a point, in the table's frame, on its top (a regular n-gon reaching 1.12)?
+// The world. Lengths in reaches, time in the page's seconds, masses in grams; gravity is
+// 24.5 reaches a second squared. Marbles and eggs are rigid bodies in their true shapes,
+// under one set of laws: gravity, and wherever two things touch -- two bodies, a body and
+// the floor, the top or a leg -- a push that keeps them from passing into each other and
+// gives back a fixed part of the speed they met at; Coulomb friction, 0.4 for every pair;
+// rolling resistance, the push's lever 0.056 mm, so that a marble on wood holds still on a
+// slope gentler than about 0.4 degrees; and the twist friction of the contact's small
+// patch. A meeting slower than 8 cm/s does not bounce: the bounce would rise less than a
+// third of a millimetre. The table is driven, turned by hand and rocked as if leaned on,
+// and far heavier than anything on it.
+const G=24.5,RAD=.02,MU=.4,RR=.00014,VT=.2,
+  add=(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]],sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],
+  mul=(a,k)=>[a[0]*k,a[1]*k,a[2]*k],dot3=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2],
+  crs=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],
+  len=a=>sqrt(dot3(a,a)),unit=a=>mul(a,1/(len(a)||1)),
+  // a vector turned by a about the unit axis k (Rodrigues)
+  rot=(v,k,a)=>{const c=cos(a),s=sin(a);return add(add(mul(v,c),mul(crs(k,v),s)),mul(k,dot3(k,v)*(1-c)))},
+  // a frame is its three axes in the world: a vector out of the frame into the world, and back
+  toW=(M,v)=>add(add(mul(M[0],v[0]),mul(M[1],v[1])),mul(M[2],v[2])),toF=(M,w)=>M.map(e=>dot3(e,w));
+
+// An egg: Hugelschaffer's curve, in Narushin's form, turned about its axis: 57 mm long, 44
+// across, widest 3 mm toward the blunt end. Its radius at t along the axis (the blunt end
+// at -EL/2), and that radius's slope.
+const EL=.1425,EB=.11,EW=.0075,
+  rho=t=>EB/2*sqrt(max(0,(EL*EL-4*t*t)/(EL*EL+8*EW*t+4*EW*EW))),
+  slope=t=>{const N=EL*EL-4*t*t,D=EL*EL+8*EW*t+4*EW*EW;return-2*EB*(t*D+EW*N)/(D**1.5*sqrt(N))};
+// the point of the egg furthest along u, from the middle of its axis: where the curve's
+// slope meets u's, by Newton's method from an ellipse's answer, kept within a bracket
+function far(u){const s=hypot(u[0],u[1]),a=EL*EL/4,b=EB*EB/4;let lo=-EL/2,hi=EL/2,t=s?a*u[2]/sqrt(a*u[2]*u[2]+b*s*s):u[2]>0?hi:lo;
+  if(s)for(let i=0;i<30;i++){const N=EL*EL-4*t*t,D=EL*EL+8*EW*t+4*EW*EW,q=N/D,p=-8*t*D-8*EW*N,q1=p/(D*D),q2=(-8*D*D-16*EW*p)/(D*D*D),
+      g=s*EB/4*q1/sqrt(q)+u[2];g>0?lo=t:hi=t;
+    let n=t-g/(s*EB/4*(q2/sqrt(q)-q1*q1/(2*q**1.5)));if(!(n>lo&&n<hi))n=(lo+hi)/2;if(abs(n-t)<1e-15)break;t=n}
+  const r=s?rho(t)/s:0;return[u[0]*r,u[1]*r,t]}
+// Its mass, centre and moments, summed over thin slices: a shell 0.35 mm thick of 2.3 g a
+// cubic centimetre round a white and yolk of 1.035 (a cubic reach holds 64,000). Boiled, an
+// egg is one rigid body. Raw, its shell carries the liquid round its axis only by
+// viscosity -- a raw egg stopped spinning and let go turns again, for about a second (TAU)
+// -- and across its axis partly by its walls, as a spheroid of its proportions does
+// (Poincare), the rest again by viscosity.
+const TAU=1,EGG=(()=>{const cut=(o,d)=>{let m=0,mt=0,ia=0,it=0,q;
+    for(let i=0;i<=1500;i++){const a=P*i/1500,u=[sin(a),0,cos(a)],s=far(u),p=[s[0]-o*u[0],s[2]-o*u[2]];
+      if(q){const R=(q[0]+p[0])/2,t=(q[1]+p[1])/2,dm=P*R*R*(q[1]-p[1])*d;m+=dm;mt+=dm*t;ia+=dm*R*R/2;it+=dm*(R*R/4+t*t)}q=p}
+    return[m,mt,ia,it]},
+  o=cut(0,147200),i=cut(.000875,147200),y=cut(.000875,66240),s=o.map((v,k)=>v-i[k]),m=s[0]+y[0],tc=(s[1]+y[1])/m,
+  // across the axis and along it, about the centre of mass
+  mo=c=>[c[3]-2*tc*c[1]+c[0]*tc*tc,c[2]],[ts,as]=mo(s),[ty,ay]=mo(y),f=((EL*EL-EB*EB)/(EL*EL+EB*EB))**2;
+  return{m,tc,R:EL/2+abs(tc),boiled:[ts+ty,ts+ty,as+ay],shell:[ts+f*ty,ts+f*ty,as],core:[(1-f)*ty,(1-f)*ty,ay]}})();
+
+// A body: a marble (k 0) or an egg (k 1); its centre of mass x, its frame M, velocity v,
+// its shell's angular momentum L and turning w, and a raw egg's liquid's angular momentum
+// H. A marble is glass, 2.5 g a cubic centimetre. A body's core is a marble's centre, or an
+// egg's shell pulled in EM (6 mm) all round, everywhere still convex: how near two cores
+// are, less their margins, is how near the bodies are.
+const MM=160000*4/3*P*RAD**3,MI=.4*MM*RAD*RAD,EM=.015,
+  eggS=u=>{const p=far(u);p[2]-=EGG.tc;return p},
+  surf=(b,u)=>b.k?add(b.x,toW(b.M,eggS(toF(b.M,u)))):add(b.x,mul(u,RAD)),
+  core=(b,u)=>b.k?(u=unit(u),sub(surf(b,u),mul(u,EM))):b.x,
+  rim=b=>b.k?EM:RAD,bound=b=>b.k?EGG.R:RAD,
+  // the shell's moments, inverted, applied to u in the world; and the liquid's
+  inv=(b,u)=>b.k?toW(b.M,toF(b.M,u).map((v,i)=>v/b.I[i])):mul(u,1/MI),
+  invC=(b,u)=>toW(b.M,toF(b.M,u).map((v,i)=>v/b.C[i])),
+  // a push J at r from the centre, and a twist T
+  kick=(b,J,r)=>{b.v=add(b.v,mul(J,1/b.m));twirl(b,crs(r,J))},
+  twirl=(b,T)=>{b.L=add(b.L,T);b.w=add(b.w,inv(b,T))};
+// A free body turns as a symmetric top does: about its angular momentum, at its size over
+// the moment across the axis, and about its own axis at the rate the other moment adds. A
+// marble, alike every way, needs only the first, and shows none of it.
+function spin(o,h){const l=len(o.L);if(!o.k||!l)return;
+  let M=o.M.map(e=>rot(e,mul(o.L,1/l),l/o.I[0]*h));const a=dot3(o.L,M[2])*(1/o.I[2]-1/o.I[0])*h,c=cos(a),s=sin(a);
+  M=[add(mul(M[0],c),mul(M[1],s)),sub(mul(M[1],c),mul(M[0],s)),M[2]];
+  const e0=unit(M[0]),e1=unit(sub(M[1],mul(e0,dot3(e0,M[1]))));o.M=[e0,e1,crs(e0,e1)]}
+// a raw egg's liquid and its shell drawn toward one another's turning, axis by axis in the
+// shell's frame, as viscosity draws them, their sum kept
+function stir(o,h){const s=toF(o.M,o.L),c=toF(o.M,o.H),q=exp(-h/TAU),S=[],L=[];
+  for(let i=0;i<3;i++){const J=s[i]+c[i],r=(s[i]/o.I[i]-c[i]/o.C[i])*q,m=o.I[i]+o.C[i];S[i]=(J+o.C[i]*r)/m*o.I[i];L[i]=(J-o.I[i]*r)/m*o.C[i]}
+  o.L=toW(o.M,S);o.H=toW(o.M,L)}
+// An egg's paint, in its own frame, each point with the way the shell faces there: two
+// bands round it and a zigzag between. Its cracks are kept the same way, wandering out
+// from where it was met.
+const skin=(t,a)=>{const r=rho(t);return[[r*cos(a),r*sin(a),t-EGG.tc],unit([cos(a),sin(a),-slope(t)])]},
+  PAINT=[...[-.024,.02].map(t=>Array.from({length:49},(_,i)=>skin(t,P*i/24))),Array.from({length:29},(_,i)=>skin(i%2?.012:-.016,P*i/14))];
+function crack(o,p){const q=toF(o.M,sub(p,o.x)),c=t=>max(.005-EL/2,min(EL/2-.005,t)),t0=c(q[2]+EGG.tc),a0=atan2(q[1],q[0]);
+  if(o.cracks.length<16)for(let j=0;j<4;j++){let t=t0,a=a0,d=random()*2*P;const l=[skin(t,a)];
+    for(let i=0;i<6;i++){d+=rnd(.7);t=c(t+.007*sin(d));a+=.007*cos(d)/max(.01,rho(t));l.push(skin(t,a))}
+    o.cracks.push(l)}}
+
+// The table, rigid: turned by t, then tipped onto the plane of its feet about that plane's
+// point over the centre. Its parts, in its own frame: the top (-1), the regular n-gon
+// reaching 1.12 between heights 0.6 and 0.67; the legs (0 to n-1), square posts 0.085
+// across from the feet up to the top. Each part's support (its point furthest along u).
+function pose(plane,t){const m=unit([-plane[0],-plane[1],1]),s=hypot(m[0],m[1]),k=s>1e-12?[-m[1]/s,m[0]/s,0]:[1,0,0],a=atan2(s,m[2]);
+  return{O:[0,0,plane[2]],M:[[cos(t),sin(t),0],[-sin(t),cos(t),0],[0,0,1]].map(e=>rot(e,k,a)),plane,t}}
+const corner=k=>{const a=P/2+2*P*k/n;return[1.12*cos(a),1.12*sin(a)]},
+  foot=k=>{const a=P/2+2*P*k/n;return[cos(a),sin(a)]},
+  part=k=>k<0?u=>{let b=-1/0,q;for(let j=0;j<n;j++){const c=corner(j),d=u[0]*c[0]+u[1]*c[1];if(d>b){b=d;q=c}}return[q[0],q[1],u[2]>0?.67:.6]}
+    :u=>{const c=foot(k);return[c[0]+(u[0]<0?-.0425:.0425),c[1]+(u[1]<0?-.0425:.0425),u[2]>0?.6:0]},
+  // the height of the plane of the top over a point
+  topZ=X=>{const m=tp.M[2],Q=add(tp.O,mul(m,.67));return Q[2]-(m[0]*(X[0]-Q[0])+m[1]*(X[1]-Q[1]))/m[2]};
+// the point of part k nearest q (in the table's frame), and whether q is inside it
+function nigh(k,q){
+  if(k>=0){const c=[...foot(k),.3],w=[.0425,.0425,.3],p=q.map((v,i)=>max(c[i]-w[i],min(c[i]+w[i],v)));
+    if(p.some((v,i)=>v!=q[i]))return[p,0];
+    let i=0,s=1,b=1/0;for(let j=0;j<3;j++)for(const t of[-1,1]){const g=abs(c[j]+t*w[j]-q[j]);if(g<b){b=g;i=j;s=t}}
+    p[i]=c[i]+s*w[i];return[p,1]}
+  let b=1/0,e,o=1;
+  for(let j=0;j<n;j++){const A=corner(j),B=corner(j+1),ex=B[0]-A[0],ey=B[1]-A[1],qx=q[0]-A[0],qy=q[1]-A[1],
+      t=max(0,min(1,(qx*ex+qy*ey)/(ex*ex+ey*ey))),g=(qx-t*ex)**2+(qy-t*ey)**2;
+    if(qx*ey-qy*ex>0)o=0;if(g<b){b=g;e=[A[0]+t*ex,A[1]+t*ey]}}
+  if(!o)return[[e[0],e[1],max(.6,min(.67,q[2]))],0];
+  if(q[2]>=.67||q[2]<=.6)return[[q[0],q[1],q[2]>=.67?.67:.6],0];
+  const u=.67-q[2],l=q[2]-.6,g=sqrt(b);
+  return[g<u&&g<l?[e[0],e[1],q[2]]:u<l?[q[0],q[1],.67]:[q[0],q[1],.6],1]}
+// is a point, in the table's frame, over its top?
 function onTop(u,v){for(let k=0;k<n;k++){const a=P/2+2*P*(k+.5)/n;if(u*cos(a)+v*sin(a)>1.12*cos(P/n))return false}return true}
-// drop a marble at a point of the room: onto the top if it is there, else the floor
-function drop(u,v){const cs=cos(th),sn=sin(th),lu=u*cs+v*sn,lv=v*cs-u*sn;
-  if(onTop(lu,lv))balls.push({on:0,u:lu,v:lv,vu:0,vv:0});
-  else if(abs(u)<=1.6&&abs(v)<=1.6)balls.push({on:2,u,v,vu:0,vv:0});wake()}
-function roll(dt,plane){const g=24.5*5/7,cs=cos(th),sn=sin(th),
-    // rolling resistance, half a percent of gravity (glass on wood): a steady drag on
-    // a rolling marble, and a hold on a resting one until the slope beats it
-    drag=(b,au,av,damp)=>{const sp=hypot(b.vu,b.vv),R=.12,A=hypot(au,av);
-      if(sp<.01){if(A<=R){b.vu=b.vv=0;return}au*=1-R/A;av*=1-R/A}else{au-=R*b.vu/sp;av-=R*b.vv/sp}
-      b.vu+=(au-damp*b.vu)*dt;b.vv+=(av-damp*b.vv)*dt};
-  for(const b of balls){
-    if(!b.on)drag(b,-g*(plane[0]*cs+plane[1]*sn),-g*(plane[1]*cs-plane[0]*sn),.8);
-    b.u+=b.vu*dt;b.v+=b.vv*dt;
-    if(!b.on){if(!onTop(b.u,b.v)){const w=at(b);Object.assign(b,{on:1,u:w[0],v:w[1],vu:b.vu*cs-b.vv*sn,vv:b.vu*sn+b.vv*cs,t:0,T:sqrt(2*.67/24.5)})}}
-    else if(b.on==1){if((b.t+=dt)>=b.T)b.on=2}
-    else{const e=.01,gu=(f(b.u+e,b.v)-f(b.u-e,b.v))/(2*e),gv=(f(b.u,b.v+e)-f(b.u,b.v-e))/(2*e);
-      drag(b,-g*gu,-g*gv,1.2);b.rest=hypot(b.vu,b.vv)<.01?(b.rest||0)+dt:0}}
-  // two marbles in one place, on one surface, push apart; a knock trades speed, and
-  // marbles merely leaning on each other just stay apart
-  for(let i=0;i<balls.length;i++)for(let j=i+1;j<balls.length;j++){const A=balls[i],B=balls[j];
-    if(!A.on!=!B.on||A.on==1||B.on==1)continue;
-    const du=B.u-A.u,dv=B.v-A.v,d=hypot(du,dv);if(d>=2*RAD||d<1e-9)continue;
-    const nu=du/d,nv=dv/d,push=(2*RAD-d)/2,rel=(B.vu-A.vu)*nu+(B.vv-A.vv)*nv,share=rel<-.02?.9*rel:rel<0?rel/2:0;
-    A.u-=nu*push;A.v-=nv*push;B.u+=nu*push;B.v+=nv*push;
-    A.vu+=share*nu;A.vv+=share*nv;B.vu-=share*nu;B.vv-=share*nv;if(rel<-.02)A.rest=B.rest=0}
-  const before=balls.length;balls=balls.filter(b=>abs(b.u)<=1.6&&abs(b.v)<=1.6);gone+=before-balls.length}
-// a marble: Jun blue on the table, Jun crimson once it has left it
-function dot(X,Y,r,b){x.beginPath();x.arc(X,Y,r,0,7);x.fillStyle=C(b.on?"crimson-base":"jun-base");x.fill();x.lineWidth=1;x.strokeStyle=C("ink");x.stroke()}
+// the table's turning, from frame a to frame b in h seconds
+function spun(a,b,h){const R=(i,j)=>a.reduce((s,e,k)=>s+b[k][i]*e[j],0),v=[R(2,1)-R(1,2),R(0,2)-R(2,0),R(1,0)-R(0,1)],
+    s=len(v)/2,c=(R(0,0)+R(1,1)+R(2,2)-1)/2;return s>1e-15?mul(v,atan2(s,c)/(2*s*h)):[0,0,0]}
+
+// The nearest points of two convex shapes, each given by its support: Gilbert, Johnson
+// and Keerthi's walk toward the origin over their difference. Null where they overlap.
+function gjk(sa,sb){let a=sa([1,0,0]),b=sb([-1,0,0]),Q=[[sub(a,b),a,b]],w=[1],v=Q[0][0];
+  for(let i=0;i<40;i++){const vv=dot3(v,v);if(vv<1e-20)return null;
+    a=sa(mul(v,-1));b=sb(v);const p=sub(a,b);if(vv-dot3(v,p)<=vv*1e-10)break;
+    const r=least([...Q,[p,a,b]]);if(!r||r.Q.length>3)return null;({Q,w,v}=r)}
+  a=[0,0,0];b=[0,0,0];Q.forEach((q,i)=>{a=add(a,mul(q[1],w[i]));b=add(b,mul(q[2],w[i]))});
+  return{a,b,d:len(v)}}
+// the point of a simplex nearest the origin: of the sets of its corners whose own nearest
+// point lies inside them, the nearest; with those corners and their weights
+function least(Q){let best=null;
+  for(let m=1;m<1<<Q.length;m++){const S=Q.filter((_,i)=>m>>i&1),o=S[0][0],E=S.slice(1).map(s=>sub(s[0],o)),
+      mu=solve(E.map(e=>E.map(g=>dot3(e,g))),E.map(e=>-dot3(e,o)));if(!mu)continue;
+    const w=[1-mu.reduce((s,z)=>s+z,0),...mu];if(w.some(z=>z<=0))continue;
+    const v=E.reduce((s,e,i)=>add(s,mul(e,mu[i])),o),d=dot3(v,v);if(!best||d<best.d)best={d,v,w,Q:S}}
+  return best}
+// a small linear system, by elimination; null if it has no single answer
+function solve(A,r){const k=r.length,M=A.map((row,i)=>[...row,r[i]]),s=max(1e-300,...A.map((row,i)=>abs(row[i]))),z=[];
+  for(let i=0;i<k;i++){let p=i;for(let j=i+1;j<k;j++)if(abs(M[j][i])>abs(M[p][i]))p=j;[M[i],M[p]]=[M[p],M[i]];
+    if(abs(M[i][i])<=1e-12*s)return null;
+    for(let j=i+1;j<k;j++){const g=M[j][i]/M[i][i];for(let l=i;l<=k;l++)M[j][l]-=g*M[i][l]}}
+  for(let i=k-1;i>=0;i--){let t=M[i][k];for(let j=i+1;j<k;j++)t-=M[i][j]*z[j];z[i]=t/M[i][i]}return z}
+
+// The floor under a body: the floor's point under the body's lowest point toward it, and
+// the floor's normal there, settled in a few rounds; the body's point nearest; the gap.
+function ground(b){let m=[0,0,1],p,s;
+  for(let i=0;i<4;i++){s=surf(b,mul(m,-1));const e=1e-5;p=[s[0],s[1],f(s[0],s[1])];
+    m=unit([(f(s[0]-e,s[1])-f(s[0]+e,s[1]))/(2*e),(f(s[0],s[1]-e)-f(s[0],s[1]+e))/(2*e),1])}
+  s=surf(b,mul(m,-1));return{n:m,p,s,d:dot3(sub(s,p),m)}}
+// A contact: body A and body B (or the floor or the table: its point there moving at V,
+// turning at W), the normal n from B toward A, the touching points, and their gap d (less
+// than nothing where pressed in); the bounce, the twist's lever, how hard it is to move
+// each way there, the speed they meet at, and the last step's pushes there to begin from.
+function meet(A,B,n,pa,pb,d,V,W,key,e,h){
+  const ra=sub(pa,A.x),rb=B&&sub(pb,B.x),t1=unit(crs(n,abs(n[0])<.6?[1,0,0]:[0,1,0])),t2=crs(n,t1),
+    kl=(u,v)=>dot3(u,v)*(1/A.m+(B?1/B.m:0))+dot3(crs(ra,u),inv(A,crs(ra,v)))+(B?dot3(crs(rb,u),inv(B,crs(rb,v))):0),
+    ka=(u,v)=>dot3(u,inv(A,v))+(B?dot3(u,inv(B,v)):0),
+    i2=(a,b,c,d)=>{const q=a*d-b*c;return[d/q,-b/q,-c/q,a/q]},
+    c={A,B,n,ra,rb,d,V,W,h,key,t1,t2,e:min(A.e,B?B.e:e),tw:max(A.tw,B?B.tw:0),kn:1/kl(n,n),
+      kt:i2(kl(t1,t1),kl(t1,t2),kl(t2,t1),kl(t2,t2)),kr:i2(ka(t1,t1),ka(t1,t2),ka(t2,t1),ka(t2,t2)),kw:1/ka(n,n),ln:0,lt:[0,0],lr:[0,0],lw:0},
+    o=A.hm&&A.hm.get(key);
+  c.v0=dot3(sub(add(A.v,crs(A.w,ra)),B?add(B.v,crs(B.w,rb)):V),n);
+  if(o){const s=h/o[4];c.ln=o[0]*s;c.lt=[dot3(o[1],t1)*s,dot3(o[1],t2)*s];c.lr=[dot3(o[2],t1)*s,dot3(o[2],t2)*s];c.lw=o[3]*s;
+    const J=add(add(mul(n,c.ln),mul(t1,c.lt[0])),mul(t2,c.lt[1])),T=add(add(mul(t1,c.lr[0]),mul(t2,c.lr[1])),mul(n,c.lw));
+    kick(A,J,ra);twirl(A,T);if(B){kick(B,mul(J,-1),rb);twirl(B,mul(T,-1))}}
+  return c}
+// One push at a contact: mode 0 keeps the gap, and parts any overlap by a fifth a step (at
+// most a reach a second); mode 1 keeps the gap without the parting; mode 2 is the bounce.
+// Then friction, within MU of the push; rolling and twist, within their levers.
+function push(c,mode){const{A,B,n,ra,rb,h}=c,rel=()=>sub(add(A.v,crs(A.w,ra)),B?add(B.v,crs(B.w,rb)):c.V),wr=()=>sub(A.w,B?B.w:c.W);
+  if(mode==2){if(!(c.v0<-VT&&c.ln>0))return;c.hit=1}
+  const g=mode==1?c.dn:c.d,tg=mode==2?-c.e*c.v0:g>0?-g/h:mode?0:min(1,.2*max(0,-g-.0005)/h),
+    l=max(0,c.ln-c.kn*(dot3(rel(),n)-tg)),dl=l-c.ln;
+  c.ln=l;kick(A,mul(n,dl),ra);if(B)kick(B,mul(n,-dl),rb);
+  if(mode==2)return;
+  let v=rel(),K=c.kt,a=c.lt[0]-K[0]*dot3(v,c.t1)-K[1]*dot3(v,c.t2),b=c.lt[1]-K[2]*dot3(v,c.t1)-K[3]*dot3(v,c.t2),m=hypot(a,b),lim=MU*c.ln;
+  if(m>lim){a*=lim/m;b*=lim/m}
+  let J=add(mul(c.t1,a-c.lt[0]),mul(c.t2,b-c.lt[1]));c.lt=[a,b];kick(A,J,ra);if(B)kick(B,mul(J,-1),rb);
+  v=wr();K=c.kr;a=c.lr[0]-K[0]*dot3(v,c.t1)-K[1]*dot3(v,c.t2);b=c.lr[1]-K[2]*dot3(v,c.t1)-K[3]*dot3(v,c.t2);m=hypot(a,b);lim=RR*c.ln;
+  if(m>lim){a*=lim/m;b*=lim/m}
+  J=add(mul(c.t1,a-c.lr[0]),mul(c.t2,b-c.lr[1]));c.lr=[a,b];twirl(A,J);if(B)twirl(B,mul(J,-1));
+  lim=MU*c.tw*c.ln;a=max(-lim,min(lim,c.lw-c.kw*dot3(wr(),n)));J=mul(n,a-c.lw);c.lw=a;twirl(A,J);if(B)twirl(B,mul(J,-1))}
+
+// One step of the world, h seconds, the table moving from pose a to pose b: gravity; a raw
+// egg's liquid drawn round; the contacts; ten rounds of pushes; the bodies move; four
+// rounds more, so that what parted overlaps is not kept as speed; two of bounces. An egg
+// met hard enough cracks where it was met: as hard as a fall of 1 cm onto a hard floor
+// (most hens' eggs crack from 8 mm landing on an end, few landing on a side). A raw one
+// met harder breaks open: as hard as a fall of 20 cm (between a crack without spilling at
+// 1 m/s and a burst at 4). A body asleep -- still for half a second, on nothing moving --
+// is left out until something wakes it.
+let pools=[],ids=0;
+function step(h,a,b,I){const cs=[],W=spun(a.M,b.M,h),at=(Q,X)=>add(Q.O,toW(Q.M,X)),
+    tv=p=>mul(sub(at(b,toF(a.M,sub(p,a.O))),p),1/h),
+    ts=max(...Array.from({length:n},(_,k)=>len(sub(at(b,[...corner(k),.67]),at(a,[...corner(k),.67])))))/h,
+    sup=k=>{const S=part(k);return u=>at(a,S(toF(a.M,u)))};
+  for(const o of I){if(o.z&&o.tt&&ts>1e-9)o.z=o.q=0;
+    if(!o.z){o.v[2]-=G*h;if(o.raw)stir(o,h);o.w=inv(o,o.L);o.tt=o.fl=0}}
+  for(const A of I){if(A.z)continue;
+    const r=(len(A.v)+len(A.w)*bound(A))*h+.002,R=bound(A)+r+ts*h,q=toF(a.M,sub(A.x,a.O)),g=ground(A);
+    // the floor
+    if(g.d<r)cs.push(meet(A,null,g.n,g.s,g.p,g.d,[0,0,0],[0,0,0],"f"+A.id,.6,h));
+    // the top and the legs
+    if(hypot(q[0],q[1])<1.12+R&&q[2]>-R&&q[2]<.67+R)for(let k=-1;k<n;k++){
+      if(k>=0&&(hypot(q[0]-foot(k)[0],q[1]-foot(k)[1])>.061+R||q[2]>.6+R))continue;
+      let m,pa,pb,s,o;
+      // an egg over the top's face meets the face at its lowest point; elsewhere, the nearest
+      if(A.k&&k<0&&(s=surf(A,mul(a.M[2],-1)),o=toF(a.M,sub(s,a.O)),onTop(o[0],o[1])&&o[2]>.66)){m=a.M[2];pa=s;pb=at(a,[o[0],o[1],.67])}
+      else if(A.k){const z=gjk(u=>core(A,u),sup(k));
+        if(z){m=unit(sub(z.a,z.b));pa=sub(z.a,mul(m,EM));pb=z.b}
+        else{m=toW(a.M,unit(sub(q,nigh(k,q)[0])));pa=surf(A,mul(m,-1));pb=sup(k)(m)}}
+      else{const[p,i]=nigh(k,q),e=sub(q,p),l=len(e)||1e-12;m=toW(a.M,mul(e,(i?-1:1)/l));pb=at(a,p);pa=sub(A.x,mul(m,RAD))}
+      const d=dot3(sub(pa,pb),m);if(d<r+ts*h){A.tt=1;cs.push(meet(A,null,m,pa,pb,d,tv(pb),W,"t"+k+"_"+A.id,.6,h))}}
+  }
+  // bodies near each other, waking any asleep: each pair begun by the one awake, or by the
+  // elder of two awake
+  near(I,o=>bound(o)+(o.z?0:(len(o.v)+len(o.w)*bound(o))*h)+.002,(P,Q)=>{if(P.z&&Q.z)return;
+    const[A,B]=Q.z||!P.z&&P.id<Q.id?[P,Q]:[Q,P],e=sub(A.x,B.x),r=(len(A.v)+len(A.w)*bound(A))*h+.002,rB=B.z?0:(len(B.v)+len(B.w)*bound(B))*h;
+    if(len(e)>bound(A)+bound(B)+r+rB)return;
+    let m,pa,pb;
+    if(!A.k&&!B.k){m=unit(e);pa=sub(A.x,mul(m,RAD));pb=add(B.x,mul(m,RAD))}
+    else{const z=gjk(u=>core(A,u),u=>core(B,u));
+      if(z){m=unit(sub(z.a,z.b));pa=sub(z.a,mul(m,rim(A)));pb=add(z.b,mul(m,rim(B)))}
+      else{m=unit(e);pa=surf(A,mul(m,-1));pb=surf(B,m)}}
+    const d=dot3(sub(pa,pb),m);if(d<r+rB){if(B.z)B.z=B.q=0;cs.push(meet(A,B,m,pa,pb,d,0,0,A.id+"_"+B.id,0,h))}});
+  for(let i=0;i<3;i++)for(const c of cs)push(c,0);
+  for(const c of cs)c.dn=c.d+h*dot3(sub(add(c.A.v,crs(c.A.w,c.ra)),c.B?add(c.B.v,crs(c.B.w,c.rb)):c.V),c.n);
+  // a body held by nothing flies as gravity has it, exactly; one held moves at its speed
+  const held=new Set();for(const c of cs)if(c.ln>0){held.add(c.A);held.add(c.B)}
+  for(const o of I)if(!o.z){o.x=add(o.x,mul(o.v,h));if(!held.has(o))o.x[2]+=G*h*h/2;spin(o,h);o.w=inv(o,o.L)}
+  for(const c of cs)push(c,1);
+  for(const c of cs)push(c,2);
+  // each body keeps the pushes of the contacts it began, to begin from next step
+  for(const o of I)if(!o.z)o.hm=new Map();
+  for(const c of cs)c.A.hm.set(c.key,[c.ln,add(mul(c.t1,c.lt[0]),mul(c.t2,c.lt[1])),add(mul(c.t1,c.lr[0]),mul(c.t2,c.lr[1])),c.lw,h]);
+  for(const c of cs){if(c.ln>0&&c.key[0]=="f")c.A.fl=1;if(!c.hit)continue;
+    const E=c.kn*c.v0*c.v0/2,two=c.A.k&&c.B&&c.B.k?2:1;
+    for(const[o,p]of[[c.A,add(c.A.x,c.ra)],[c.B,c.B&&add(c.B.x,c.rb)]])
+      if(o&&o.k&&E>two*o.m*G*.025){crack(o,p);if(o.raw&&E>two*o.m*G*.51)o.broke=1}}
+  for(const o of I){if(o.z)continue;
+    if(!o.off){const q=toF(b.M,sub(o.x,b.O));if(o.fl||!onTop(q[0],q[1]))o.off=1}
+    o.q=len(o.v)<.003&&len(o.w)*bound(o)<.003&&(!o.raw||len(invC(o,o.H))*bound(o)<.003)?o.q+h:0;
+    if(o.q>.5&&!(o.tt&&ts>1e-9)){o.z=1;o.v=[0,0,0];o.L=[0,0,0];o.H=[0,0,0];o.w=[0,0,0]}}}
+// every pair of a list near enough, for each its reach m, to touch: a sweep along x
+function near(L,m,fn){const S=L.slice().sort((a,b)=>a.x[0]-b.x[0]),w=2*max(0,...S.map(m));
+  for(let i=0;i<S.length;i++)for(let j=i+1;j<S.length&&S[j].x[0]-S[i].x[0]<w;j++)fn(S[i],S[j])}
+// A step of the page's clock. Bodies that might touch within it go together, an island;
+// the floor and the table join none. Each island moves in as many steps of the world as
+// keep it within 0.8 mm of where it was a step before -- so a marble falling fast takes
+// short steps alone -- the table between its two poses.
+function advance(a,b){const h=STEP/1000,c=k=>[...corner(k),.67],N=balls.length,
+    rim=max(...Array.from({length:n},(_,k)=>len(sub(add(b.O,toW(b.M,c(k))),add(a.O,toW(a.M,c(k)))))))/h,
+    sp=o=>o.z?0:len(o.v)+len(o.w)*bound(o),up=new Map(balls.map(o=>[o,o])),root=o=>up.get(o)==o?o:(up.set(o,root(up.get(o))),up.get(o)),isl=new Map();
+  near(balls,o=>bound(o)+sp(o)*h+.002,(A,B)=>{if(!(A.z&&B.z)&&len(sub(A.x,B.x))<bound(A)+bound(B)+(sp(A)+sp(B))*h+.004)up.set(root(A),root(B))});
+  for(const o of balls){const r=root(o);isl.has(r)?isl.get(r).push(o):isl.set(r,[o])}
+  for(const I of isl.values()){const near=I.some(o=>hypot(o.x[0],o.x[1])<1.3);
+    if(I.every(o=>o.z)&&!(near&&rim>1e-9&&I.some(o=>o.tt)))continue;
+    const m=min(24,max(1,-fl(-(max(...I.map(sp))+(near?rim:0))*h/.002)));
+    let q=a;for(let i=1;i<=m;i++){const t=i/m,r=i==m?b:pose(a.plane.map((z,j)=>z+(b.plane[j]-z)*t),a.t+(b.t-a.t)*t);step(h/m,q,r,I);q=r}}
+  for(const o of balls)if(o.broke)spill(o);
+  const kept=balls.filter(o=>!o.broke);balls=kept.filter(o=>abs(o.x[0])<=1.6&&abs(o.x[1])<=1.6&&o.x[2]>-1);gone+=kept.length-balls.length}
+
+// Something laid at rest, just touching what it is laid on -- the floor at (x,y), or the
+// top at (u,v) of its own frame: a marble, or one time in twenty an egg on its side,
+// turned anyhow. Some eggs are boiled and some are not, and how the universe lays them so
+// remains a mystery.
+function lay(x0,y0,top){if(!tp)return;const k=+(random()<.05),raw=k&&random()<.5,
+    b={id:ids++,k,raw,v:[0,0,0],L:[0,0,0],H:[0,0,0],w:[0,0,0],m:k?EGG.m:MM,I:k?raw?EGG.shell:EGG.boiled:0,C:raw?EGG.core:0,
+      e:k?.3:.9,tw:k?.0007:.00005,off:!top,z:0,q:0,paint:k?PAINT:[],cracks:[]},
+    u=top?tp.M[2]:[0,0,1],a=random()*2*P,ax=top?add(mul(tp.M[0],cos(a)),mul(tp.M[1],sin(a))):[cos(a),sin(a),0],
+    e0=rot(u,ax,random()*2*P),S=top?add(tp.O,toW(tp.M,[x0,y0,.67])):[x0,y0,f(x0,y0)];
+  b.M=[e0,crs(ax,e0),ax];b.x=add(S,mul(u,.1));
+  if(top)b.x=add(b.x,mul(u,dot3(sub(S,surf(b,mul(u,-1))),u)));
+  else for(let i=0;i<3;i++){const g=ground(b);b.x=sub(b.x,mul(g.n,g.d))}
+  balls.push(b);wake()}
+// a click on the plan: on the top if the top is there, else on the floor
+function drop(u,v){if(!tp)return;const q=toF(tp.M,sub([u,v,topZ([u,v])],tp.O));
+  if(onTop(q[0],q[1]))lay(q[0],q[1],1);else if(abs(u)<=1.6&&abs(v)<=1.6)lay(u,v,0)}
+// The table set down anew, on another floor or another number of legs: what is on it goes
+// with it, what is on the floor stays there, on the floor, and everything wakes.
+function carry(){if(!tp)return;const a=tp,b=tp=pose(stand(sim).plane,th),re=v=>toW(b.M,toF(a.M,v));
+  for(const o of balls){o.z=o.q=0;o.hm=0;
+    if(!o.off){o.x=add(b.O,re(sub(o.x,a.O)));o.M=o.M.map(re);o.v=re(o.v);o.L=re(o.L);o.H=re(o.H);o.w=inv(o,o.L)}
+    else if(o.fl)for(let i=0;i<3;i++){const g=ground(o);o.x=sub(o.x,mul(g.n,g.d))}}}
+// An egg broken open: its white spread round its yolk where it lay, bits of its shell about
+function spill(o){const on=!o.off,q=on?toF(tp.M,sub(o.x,tp.O)):o.x;
+  pools.push({c:[q[0],q[1]],on,t0:sim,glaze:o.off,R:.15,a:[rnd(.12),random()*7,rnd(.08),random()*7],y:[rnd(.03),rnd(.03)],
+    bits:Array.from({length:5},()=>{const a=random()*2*P,r=.05+random()*.13;return[r*cos(a),r*sin(a),random()*7]})})}
+// a point of a pool, dx and dy from its middle, where it lies; how far it has spread (over
+// half a second, as drawn: the white is not followed as a liquid); its edge
+const pw=(q,dx,dy)=>q.on?add(tp.O,toW(tp.M,[q.c[0]+dx,q.c[1]+dy,.67])):[q.c[0]+dx,q.c[1]+dy,f(q.c[0]+dx,q.c[1]+dy)],
+  spread=q=>1-exp(-(sim-q.t0)/150),
+  edge=q=>{const g=spread(q),a=q.a;return Array.from({length:40},(_,i)=>{const t=P*i/20,r=q.R*g*(1+a[0]*sin(2*t+a[1])+a[2]*sin(3*t+a[3]));return pw(q,r*cos(t),r*sin(t))})};
+
+// A body as an eye looking along d sees it, through pt (a point of the world to the page):
+// a marble a disc of radius r; an egg its outline, and on the side toward the eye its
+// paint and cracks. Each is one glaze on the table and another off it; the paint is the
+// family's third.
+function body(b,d,pt,r){if(!b.k){const c=pt(b.x);dot(c[0],c[1],r,b);return}
+  const a1=unit(crs(d,abs(d[2])<.9?[0,0,1]:[1,0,0])),a2=crs(d,a1),out=[];
+  for(let i=0;i<36;i++){const t=P*i/18;out.push(pt(surf(b,add(mul(a1,cos(t)),mul(a2,sin(t))))))}
+  x.beginPath();trace(x,out);x.closePath();x.fillStyle=C(b.off?"crimson-base":"jun-base");x.fill();
+  x.save();x.clip();x.lineCap="round";
+  for(const[L,c,w]of[[b.paint,"junsplash-wash",1.6],[b.cracks,"ink",.8]]){x.beginPath();
+    for(const l of L)for(let i=1;i<l.length;i++)if(dot3(toW(b.M,l[i-1][1]),d)<0&&dot3(toW(b.M,l[i][1]),d)<0){
+      const p=pt(add(b.x,toW(b.M,l[i-1][0]))),q=pt(add(b.x,toW(b.M,l[i][0])));x.moveTo(p[0],p[1]);x.lineTo(q[0],q[1])}
+    x.strokeStyle=C(c);x.lineWidth=w;x.stroke()}
+  x.restore();x.beginPath();trace(x,out);x.closePath();x.lineWidth=1;x.strokeStyle=C("ink");x.stroke()}
+// a marble
+function dot(X,Y,r,b){x.beginPath();x.arc(X,Y,r,0,7);x.fillStyle=C(b.off?"crimson-base":"jun-base");x.fill();x.lineWidth=1;x.strokeStyle=C("ink");x.stroke()}
+// a pool from above: the white, the yolk, the bits of shell
+function pond(q,pl,s){const g=spread(q),Y=pl(pw(q,q.y[0],q.y[1]));
+  x.beginPath();trace(x,edge(q).map(pl));x.closePath();x.fillStyle=C("paper");x.fill();x.lineWidth=.8;x.strokeStyle=C("rule");x.stroke();
+  x.beginPath();x.arc(Y[0],Y[1],.04*s*g,0,7);x.fillStyle=C("gold-accent");x.fill();
+  x.lineWidth=2;x.strokeStyle=C(q.glaze?"crimson-base":"jun-base");
+  for(const b of q.bits){const c=pl(pw(q,b[0]*g,b[1]*g));x.beginPath();x.arc(c[0],c[1],.015*s,b[2],b[2]+1.8);x.stroke()}}
 
 // A camera's mark on the plan: a short line on the side it looks from, and its letter.
 function camera(e,o,s,tag){const d=[-e[1],e[0]];
@@ -285,38 +587,46 @@ function stand(t){const p=feet(th),h=p.map(r=>f(r[0],r[1])),R=rests(p,h),a=R[0],
 function draw(wall){
   // The page's clock runs at five sixths: everything as it would be, slow enough to follow.
   // The world moves in fixed steps of that clock, whatever the screen's rate: each step
-  // eases the turn, finds how the table stands, and moves the marbles; a frame only draws.
+  // eases the turn, finds how the table stands, and moves what is on it and round it; a
+  // frame only draws.
   const now=wall*5/6;
-  if(sim==null||now-sim>200)sim=now;
-  while(sim+STEP<=now){sim+=STEP;th=to+(th-to)*exp(-STEP/56);roll(STEP/1000,stand(sim).plane)}
+  if(sim==null||now-sim>200){sim=now;tp=null}
+  tp=tp||pose(stand(sim).plane,th);
+  while(sim+STEP<=now){const a=tp;sim+=STEP;th=to+(th-to)*exp(-STEP/56);tp=pose(stand(sim).plane,th);if(balls.length)advance(a,tp)}
   const{p,h,R,a,b,plane}=stand(sim),
     gap=p.map((r,m)=>max(a[0]*r[0]+a[1]*r[1]+a[2],b[0]*r[0]+b[1]*r[1]+b[2])-h[m]),
     up=gap.filter(v=>v>.004).length,s=W/3.2,o=W/2,K=1.12*s,top=new Path2D(),T=tone(plane),
-    ea=[-sin(th),cos(th)],eb=[cos(th),sin(th)],
-    marbles=on=>{for(const b of balls)if(!b.on==on){const r=at(b);dot(o+r[0]*s,o-r[1]*s,max(2.5,RAD*s),b)}};
+    ea=[-sin(th),cos(th)],eb=[cos(th),sin(th)],pl=X=>[o+X[0]*s,o-X[1]*s],at=X=>pl(add(tp.O,toW(tp.M,X))),gc=at([0,0,.67]),
+    // from above, bodies below the top's height go under it, the rest over it
+    things=over=>{for(const d of balls){const L=surf(d,[0,0,-1]);if(L[2]>topZ(L)-.003==over)body(d,[0,0,-1],pl,max(2.5,RAD*s))}};
   x.setTransform(dpr,0,0,dpr,0,0);x.clearRect(0,0,CW,CH);x.drawImage(map,0,0,W,W);
-  marbles(false);
-  // the top from above, in its tone: translucent over the floor
-  trace(top,p.map(r=>[o+r[0]*s*1.12,o-r[1]*s*1.12]));top.closePath();
-  const gr=x.createLinearGradient(o+T.u[0]*K,o-T.u[1]*K,o-T.u[0]*K,o+T.u[1]*K);
+  for(const q of pools)if(!q.on)pond(q,pl,s);
+  things(false);
+  // the top from above, where the rigid top is, in its tone: translucent over the floor
+  trace(top,Array.from({length:n},(_,k)=>at([...corner(k),.67])));top.closePath();
+  const gr=x.createLinearGradient(gc[0]+T.u[0]*K,gc[1]-T.u[1]*K,gc[0]-T.u[0]*K,gc[1]+T.u[1]*K);
   gr.addColorStop(0,"rgba("+T.hi+")");gr.addColorStop(1,"rgba("+T.lo.slice(0,3)+","+T.lo[3].toFixed(3)+")");
   x.fillStyle=gr;x.fill(top);x.strokeStyle=C("amber-base");x.lineWidth=1.5;x.stroke(top);
-  p.forEach((r,m)=>{x.beginPath();x.arc(o+r[0]*s,o-r[1]*s,5.5,0,7);x.fillStyle=gap[m]>.004?C("paper"):C("amber-base");x.fill();x.stroke()});
-  marbles(true);
+  p.forEach((r,m)=>{const F=at([...foot(m),0]);x.beginPath();x.arc(F[0],F[1],5.5,0,7);x.fillStyle=gap[m]>.004?C("paper"):C("amber-base");x.fill();x.stroke()});
+  for(const q of pools)if(q.on)pond(q,pl,s);
+  things(true);
   x.font=col.font;camera(ea,o,s,"a");camera(eb,o,s,"b");
   if(wide){elevation(p,plane,ea,W+32,.52*E+.01*W,E,"a");elevation(p,plane,eb,W+32,W/2+.52*E+.01*W,E,"b")}
   else{elevation(p,plane,ea,0,W*1.4,E,"a");elevation(p,plane,eb,E+24,W*1.4,E,"b")}
-  const onT=balls.filter(b=>!b.on).length,still=balls.filter(b=>b.rest>.6).length,loose=balls.length-onT-still,
+  const on=balls.filter(d=>!d.off),still=balls.filter(d=>d.off&&d.z).length,loose=balls.length-on.length-still,
+    cracked=balls.filter(d=>d.cracks.length).length,broke=pools.length,
+    tally=l=>{const e=l.filter(d=>d.k).length,m=l.length-e;return[m&&m+(m>1?" marbles":" marble"),e&&e+(e>1?" eggs":" egg")].filter(Boolean).join(" and ")},
     state=(!up?"It is still.":R.length>1&&b!==a?"It rocks.":up===1?"One foot is in the air.":up+" feet are in the air.")+
-      (onT?" "+onT+(onT>1?" marbles are":" marble is")+" on the table.":"")+(loose?" "+loose+" rolling on the floor.":"")+
-      (still?" "+still+(still>1?" rest":" rests")+" in a hollow.":"")+(gone?" "+gone+" rolled away.":"");
+      (on.length?" "+tally(on)+(on.length>1?" are":" is")+" on the table.":"")+(loose?" "+loose+" rolling on the floor.":"")+
+      (still?" "+still+(still>1?" rest":" rests")+" in a hollow.":"")+(gone?" "+gone+" rolled away.":"")+
+      (broke?" "+broke+(broke>1?" eggs broke.":" egg broke."):"")+(cracked?" "+cracked+(cracked>1?" eggs are cracked.":" egg is cracked."):"");
   if(state!==said)$("s").textContent=said=state;
   // a change of theme: the drawing as it was, laid over the new one and let go
   if(old){const k=(wall-t0)/500;if(k>=1||old.width!=c.width||old.height!=c.height)old=null;
     else{x.setTransform(1,0,0,1,0,0);x.globalAlpha=1-ease(k);x.drawImage(old,0,0);x.globalAlpha=1}}
-  // when nothing moves -- no lean, no turn, no marble, no fade -- the page rests, and draws
-  // nothing, until something wakes it
-  if(drag!==null||abs(to-th)>1e-4||R.length>1&&!calm||old||balls.some(b=>b.on==1||b.vu||b.vv))requestAnimationFrame(draw);
+  // when nothing moves -- no lean, no turn, nothing awake, no spreading, no fade -- the page
+  // rests, and draws nothing, until something wakes it
+  if(drag!==null||abs(to-th)>1e-4||R.length>1&&!calm||old||balls.some(d=>!d.z)||pools.some(q=>sim-q.t0<1500))requestAnimationFrame(draw);
   else asleep=true}
 function wake(){if(asleep){asleep=false;requestAnimationFrame(draw)}}
 // the curve the page's own colours fade along, CSS's "ease": cubic-bezier(.25,.1,.25,1)
@@ -332,10 +642,10 @@ c.onpointerup=e=>{const r=c.getBoundingClientRect(),X=e.clientX-r.left,Y=e.clien
   drag=press=null};
 c.onpointercancel=()=>{drag=press=null};
 c.onkeydown=e=>{const r={ArrowLeft:1,ArrowUp:1,ArrowRight:-1,ArrowDown:-1}[e.key];if(r){to+=r*P/360;e.preventDefault();wake()}};
-legs.forEach(btn=>btn.onclick=()=>{n=+btn.textContent;legs.forEach(o=>o.setAttribute("aria-pressed",o===btn));wake()});
+legs.forEach(btn=>btn.onclick=()=>{n=+btn.textContent;legs.forEach(o=>o.setAttribute("aria-pressed",o===btn));carry();wake()});
 $("again").onclick=another;
-// the button drops one somewhere on the top
-$("marble").onclick=()=>{const a=random()*2*P,r=sqrt(random())*.9*1.12*cos(P/n);balls.push({on:0,u:r*cos(a),v:r*sin(a),vu:0,vv:0});wake()};
+// the button lays one somewhere on the top
+$("marble").onclick=()=>{const a=random()*2*P,r=sqrt(random())*.9*1.12*cos(P/n);lay(r*cos(a),r*sin(a),1)};
 addEventListener("resize",()=>{size();wake()});
 another();size();requestAnimationFrame(draw);
 
