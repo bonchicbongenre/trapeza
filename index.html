@@ -101,7 +101,9 @@ function rgb(s){const m=/oklch\(([\d.]+)(%?)\s+([\d.]+)\s+([\d.]+)/.exec(s);if(!
 // The glazes: the floor in one family's three washes, the table in the middle glaze of
 // the family before it, the marbles in the third (one end of it on the table, the other
 // off it). The dot after the theme button turns all three on together. The drawing asks
-// for its colours by their first names.
+// for its colours by their first names. White things -- the white of an egg, china,
+// cheese -- are the light paper and rule (Ding white) in either theme: a white plate is
+// white in a dark room too.
 const fams=[["qingbai","ru","longquan"],["crimson","junsplash","jun"],["gold","amber","rust"]];let g=0;
 function colours(){const cs=getComputedStyle(document.documentElement),bs=getComputedStyle(document.body),F=fams[g],T=fams[(g+2)%3][1],
     M=fams[(g+1)%3],as={"qingbai-wash":F[0]+"-wash","ru-wash":F[1]+"-wash","longquan-wash":F[2]+"-wash",
@@ -109,6 +111,8 @@ function colours(){const cs=getComputedStyle(document.documentElement),bs=getCom
   for(const t of["ink","paper","rule","amber-base","amber-wash","qingbai-wash","ru-wash","longquan-wash","jun-base","crimson-base","junsplash-wash","gold-accent","gold-wash","gold-base","rust-base","rust-accent"]){
     let v=rgb(cs.getPropertyValue("--"+(as[t]||t)));if(!/\d/.test(v))v=rgb(/wash|paper/.test(t)?bs.backgroundColor:bs.color);
     col["--"+t]=v;col["--"+t+"#"]=v.match(/\d+/g).map(Number)}
+  const ding=cs.getPropertyValue("--ding").trim();
+  for(const[t,l,k]of[["white",.95,"paper"],["white-rule",.86,"rule"]])col["--"+t]=ding?rgb("oklch("+l+" "+ding+")"):col["--"+k];
   col.font="12px "+cs.getPropertyValue("--typewriter")}
 
 // The plan's floor: three washes, low to high, each a third of its heights, and ink
@@ -243,7 +247,7 @@ function elevation(p,plane,e,X,Y,w,tag){const s=w/2.8,cx=X+w/2,leg=.6*s,lw=.085*
         for(let i=0;i<ks.length;){let j=i;while(j+1<ks.length&&ks[j+1]==ks[j]+1)j++;const run=ks.slice(i,j+1);i=j+1;
           x.beginPath();for(const c of run){const t=c*FX;x.lineTo(cx+t*s,gy(t,dk)-max(.6,bins.get(c)*s))}
           for(const c of run.reverse()){const t=c*FX;x.lineTo(cx+t*s,gy(t,dk))}
-          x.closePath();x.fillStyle=C("paper");x.fill();x.lineWidth=.8;x.strokeStyle=C("rule");x.stroke()}}
+          x.closePath();x.fillStyle=C("white");x.fill();x.lineWidth=.8;x.strokeStyle=C("white-rule");x.stroke()}}
       const ty=b.yo[0]*e[0]+b.yo[1]*e[1];x.beginPath();x.ellipse(cx+ty*s,gy(ty,dk),.04*s,.03*s,0,P,2*P);x.closePath();
       x.fillStyle=C("gold-accent");x.fill();x.lineWidth=.8;x.strokeStyle=C("ink");x.stroke();
       x.lineWidth=2;x.strokeStyle=C(b.glaze?"crimson-base":"jun-base");
@@ -254,7 +258,7 @@ function elevation(p,plane,e,X,Y,w,tag){const s=w/2.8,cx=X+w/2,leg=.6*s,lw=.085*
         Q=pw(b,b.y[0],b.y[1]),yk=on(Q[0]*e[0]+Q[1]*e[1]);
       if(!b.on)line(t0-.03,t1+.03);
       x.beginPath();for(let i=0;i<22;i++){const q=on(t0+(t1-t0)*(i<11?i:21-i)/10);x.lineTo(q[0],q[1]-(i<11?w:0))}
-      x.closePath();x.fillStyle=C("paper");x.fill();x.lineWidth=.8;x.strokeStyle=C("rule");x.stroke();
+      x.closePath();x.fillStyle=C("white");x.fill();x.lineWidth=.8;x.strokeStyle=C("white-rule");x.stroke();
       x.beginPath();x.ellipse(yk[0],yk[1]-w/2,.04*s*g,.03*s*g,0,P,2*P);x.closePath();x.fillStyle=C("gold-accent");x.fill();x.strokeStyle=C("ink");x.stroke();
       x.lineWidth=2;x.strokeStyle=C(b.glaze?"crimson-base":"jun-base");
       for(const c of b.bits){const t=tm+(c[0]*e[0]+c[1]*e[1])*g,q=on(t-.012),u=on(t+.012);x.beginPath();x.moveTo(q[0],q[1]-1);x.lineTo(u[0],u[1]-1);x.stroke()}}
@@ -793,10 +797,10 @@ function platter(b,d,pt){const W_=v=>add(b.x,toW(b.M,v)),dl=toF(b.M,d),above=dl[
         n=toW(b.M,unit([-pileD(q)*A[0]/(q||1),-pileD(q)*A[1]/(q||1),1]));if(dot3(n,d)<0){const p=pt(W_(A)),r=pt(W_(B));x.moveTo(p[0],p[1]);x.lineTo(r[0],r[1])}}
       x.strokeStyle=C(c);x.lineWidth=w;x.stroke()};
   x.save();x.lineJoin="round";
-  if(above){x.beginPath();trace(x,ring(PR,PH,48));x.closePath();x.fillStyle=C("paper");x.fill();x.lineWidth=1;x.strokeStyle=C("rule");x.stroke();
+  if(above){x.beginPath();trace(x,ring(PR,PH,48));x.closePath();x.fillStyle=C("white");x.fill();x.lineWidth=1;x.strokeStyle=C("white-rule");x.stroke();
     x.beginPath();trace(x,ring(PW,PT,40));x.closePath();x.lineWidth=.7;x.stroke();
     x.beginPath();trace(x,ring(RE,pile(RE),40));x.closePath();x.fillStyle=C("gold-wash");x.fill();x.strokeStyle=C("gold-base");x.lineWidth=.8;x.stroke()}
-  else{const ch=out(china);x.beginPath();trace(x,ch);x.closePath();x.fillStyle=C("paper");x.fill();x.lineWidth=1;x.strokeStyle=C("rule");x.stroke();
+  else{const ch=out(china);x.beginPath();trace(x,ch);x.closePath();x.fillStyle=C("white");x.fill();x.lineWidth=1;x.strokeStyle=C("white-rule");x.stroke();
     // the near rim's lip, across the eye: the heap shows above it
     const L=pt(W_(add(mul(toF(b.M,a1),-PR),[0,0,PH-PLATE.zc]))),R=pt(W_(add(mul(toF(b.M,a1),PR),[0,0,PH-PLATE.zc]))),k=1e4;
     const t=unit([R[0]-L[0],R[1]-L[1],0]),nv=t[0]>0?[t[1],-t[0]]:[-t[1],t[0]];
@@ -805,7 +809,7 @@ function platter(b,d,pt){const W_=v=>add(b.x,toW(b.M,v)),dl=toF(b.M,d),above=dl[
     const hp=out(dome);x.beginPath();trace(x,hp);x.closePath();x.fillStyle=C("gold-wash");x.fill();x.strokeStyle=C("gold-base");x.lineWidth=.8;x.stroke()}
   lines(b.strands,"gold-base",.7);
   x.beginPath();trace(x,b.sauce.map(v=>pt(W_(v))));x.closePath();x.fillStyle=C("rust-accent");x.globalAlpha=.85;x.fill();x.globalAlpha=1;
-  x.fillStyle=C("paper");for(const v of b.cheese){const q=hypot(v[0],v[1]),n=toW(b.M,unit([-pileD(q)*v[0]/(q||1),-pileD(q)*v[1]/(q||1),1]));
+  x.fillStyle=C("white");for(const v of b.cheese){const q=hypot(v[0],v[1]),n=toW(b.M,unit([-pileD(q)*v[0]/(q||1),-pileD(q)*v[1]/(q||1),1]));
     if(dot3(n,d)<0){const p=pt(W_(v));x.fillRect(p[0]-.9,p[1]-.9,1.8,1.8)}}
   x.restore()}
 // a marble
@@ -821,13 +825,13 @@ function wet(q){const N=FN,h=q.h,th=.00025,parts=[],edges=[];
   return{parts,edges}}
 // a pool from above: the white, the yolk, the bits of shell
 function pond(q,pl,s){if(q.h){const w=wet(q),P_=X=>pl([X[0],X[1],0]);
-    x.beginPath();for(const p of w.parts){trace(x,p.map(P_));x.closePath()}x.fillStyle=C("paper");x.fill();
-    x.beginPath();for(const[a,b]of w.edges){const A=P_(a),B=P_(b);x.moveTo(A[0],A[1]);x.lineTo(B[0],B[1])}x.lineWidth=.8;x.strokeStyle=C("rule");x.stroke();
+    x.beginPath();for(const p of w.parts){trace(x,p.map(P_));x.closePath()}x.fillStyle=C("white");x.fill();
+    x.beginPath();for(const[a,b]of w.edges){const A=P_(a),B=P_(b);x.moveTo(A[0],A[1]);x.lineTo(B[0],B[1])}x.lineWidth=.8;x.strokeStyle=C("white-rule");x.stroke();
     const Y=P_(q.yo);x.beginPath();x.arc(Y[0],Y[1],.04*s,0,7);x.fillStyle=C("gold-accent");x.fill();
     x.lineWidth=2;x.strokeStyle=C(q.glaze?"crimson-base":"jun-base");
     for(const b of q.bo){const c=P_(b);x.beginPath();x.arc(c[0],c[1],.015*s,b[2],b[2]+1.8);x.stroke()}return}
   const g=spread(q),Y=pl(pw(q,q.y[0],q.y[1]));
-  x.beginPath();trace(x,edge(q).map(pl));x.closePath();x.fillStyle=C("paper");x.fill();x.lineWidth=.8;x.strokeStyle=C("rule");x.stroke();
+  x.beginPath();trace(x,edge(q).map(pl));x.closePath();x.fillStyle=C("white");x.fill();x.lineWidth=.8;x.strokeStyle=C("white-rule");x.stroke();
   x.beginPath();x.arc(Y[0],Y[1],.04*s*g,0,7);x.fillStyle=C("gold-accent");x.fill();
   x.lineWidth=2;x.strokeStyle=C(q.glaze?"crimson-base":"jun-base");
   for(const b of q.bits){const c=pl(pw(q,b[0]*g,b[1]*g));x.beginPath();x.arc(c[0],c[1],.015*s,b[2],b[2]+1.8);x.stroke()}}
