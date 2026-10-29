@@ -150,3 +150,15 @@ What itsthefloor.fyi does. A golf pass must keep every line true.
     rolls on as the floor lets it; out of the map, it rolled out the door. On a
     table that rocks, it may go before anyone sneezes. Only the meatball rolls:
     the pasta, the sauce and the cheese stay put, as at that gust they would.
+18. "from a leg", before the theme button, flips the plan's square into the table's frame
+    ("from above" flips it back): the eye rides the leg farthest from both cameras'
+    marks, on its inner side half way up, looking at the table's middle and a little
+    down, and turns and rocks with the table, so the table holds still and the world
+    moves round it. In true perspective it sees the same things: the underside of the
+    top, shaded along its tilt as every view shades the top; the floor in the plan's
+    washes and contours; the other legs, round, with their shadows; and everything
+    below the top or beyond its edge -- what lies on the top is hidden by it. Far
+    things are drawn before near ones, so a hill hides what is behind it. Dragging
+    sideways turns the table; a click lays a marble where the eye's ray meets the floor,
+    or, meeting the underside, on the top above that point. Without script there is no
+    button.

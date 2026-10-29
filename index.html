@@ -41,6 +41,7 @@ a{color:var(--amber-accent);text-underline-offset:.15em}
 <span id="legs"><button>3</button><button aria-pressed="true">4</button><button>5</button><button>6</button></span>
 <button id="again">another floor</button>
 <button id="marble">drop a marble</button>
+<button id="view" hidden>from a leg</button>
 <button id="theme" hidden>dark</button>
 <button id="glaze" hidden></button>
 </nav>
@@ -849,6 +850,65 @@ function stand(t){const p=feet(th),h=p.map(r=>f(r[0],r[1])),R=rests(p,h),a=R[0],
     q=(1-cos(2*P*t/1900))/2,k=calm||R.length<2?0:q*q*q*(q*(6*q-15)+10);
   return{p,h,R,a,b,plane:[0,1,2].map(i=>a[i]+(b[i]-a[i])*k)}}
 
+// The leg's eye: the table's frame, the flip of the plan's. The eye rides the leg farthest
+// from both cameras' marks, on its inner side half way up, looking at the table's middle
+// and a little down; it turns and rocks with the table, so the table holds still and the
+// world moves round it. In perspective, the same things: the floor in the plan's washes and
+// contours, the underside of the top, the other legs with their shadows, and what lies
+// below the top -- what is on the top cannot be seen from under it. Far things first.
+let view=0;
+function lookout(){const mk=[[1.36,0],[0,-1.36]];let L=0,bd=-1;
+  for(let k=0;k<n;k++){const q=foot(k),d=min(...mk.map(m=>hypot(q[0]-m[0],q[1]-m[1])));if(d>bd+1e-9){bd=d;L=k}}
+  const q=foot(L),a=-.14,F=unit([-q[0]*cos(a),-q[1]*cos(a),sin(a)]),Rt=unit(crs(F,[0,0,1]));
+  return{L,E:add(tp.O,toW(tp.M,[q[0]*.94,q[1]*.94,.3])),F:toW(tp.M,F),R:toW(tp.M,Rt),U:toW(tp.M,crs(Rt,F)),f:W/2/1.1918}}
+function eye(p,h,plane){const V=lookout(),{E,F,R,U}=V,fo=V.f,near=.01,o=W/2,
+    cam=X=>{const v=sub(X,E);return[dot3(v,R),dot3(v,U),dot3(v,F)]},scr=c=>[o+fo*c[0]/c[2],o-fo*c[1]/c[2]],
+    pt=X=>{const c=cam(X);return c[2]>near?scr(c):null},
+    // a polygon of the world, cut where it passes behind the eye, and drawn
+    poly=P_=>{const c=P_.map(cam),out=[];for(let i=0;i<c.length;i++){const A=c[i],B=c[(i+1)%c.length];if(A[2]>=near)out.push(A);
+        if(A[2]>=near!=B[2]>=near){const t=(near-A[2])/(B[2]-A[2]);out.push([A[0]+(B[0]-A[0])*t,A[1]+(B[1]-A[1])*t,near])}}
+      if(out.length<3)return 0;x.beginPath();trace(x,out.map(scr));x.closePath();return 1},
+    T=tone(plane),items=[],dist=X=>len(sub(X,E)),ink=C("ink#").join(","),
+    band=[C("qingbai-wash"),C("ru-wash"),C("longquan-wash")],lo=lv[0],hi=lv[1],G=48,gx=i=>-1.6+3.2*i/G,Z=[];
+  x.save();x.beginPath();x.rect(0,0,W,W);x.clip();
+  // the underside of the top: nothing below it is ever behind it, so it is drawn first
+  const U6=Array.from({length:n},(_,k)=>add(tp.O,toW(tp.M,[...corner(k),.6])));
+  // shaded along its tilt as every view shades it, the ramp taken from three of its points in
+  // front of the eye
+  if(poly(U6)){const sv=r=>(1-(r[0]*T.u[0]+r[1]*T.u[1])/1.12)/2,
+      Q=[[0,0],[-.5,0],[0,-.5],[.5,0],[0,.5],[-.5,-.5]].map(r=>[r,pt(add(tp.O,toW(tp.M,[r[0],r[1],.6])))]).filter(q=>q[1]),
+      A=Q[0],B=Q.find(q=>q!==A),Cc=B&&Q.find(q=>q!==A&&q!==B&&abs((B[1][0]-A[1][0])*(q[1][1]-A[1][1])-(B[1][1]-A[1][1])*(q[1][0]-A[1][0]))>1);
+    x.fillStyle=Cc?ramp(A[1],B[1],Cc[1],sv(A[0]),sv(B[0]),sv(Cc[0]),T,.25):C("amber-base");x.fill();x.lineWidth=1.2;x.strokeStyle=C("amber-base");x.stroke()}
+  // the floor, a square at a time, in the plan's washes, its contours every 0.012
+  for(let j=0;j<=G;j++)for(let i=0;i<=G;i++)Z[j*(G+1)+i]=f(gx(i),gx(j));
+  for(let j=0;j<G;j++)for(let i=0;i<G;i++){const z=[Z[j*(G+1)+i],Z[j*(G+1)+i+1],Z[(j+1)*(G+1)+i+1],Z[(j+1)*(G+1)+i]],
+      q=[[gx(i),gx(j),z[0]],[gx(i+1),gx(j),z[1]],[gx(i+1),gx(j+1),z[2]],[gx(i),gx(j+1),z[3]]],m=(z[0]+z[1]+z[2]+z[3])/4;
+    items.push([dist([(q[0][0]+q[2][0])/2,(q[0][1]+q[2][1])/2,m]),()=>{if(!poly(q))return;const bc=band[max(0,min(2,fl(3*(m-lo)/(hi-lo+1e-9))))];
+      // filled and edged in its own wash, so no seam shows between squares
+      x.fillStyle=x.strokeStyle=bc;x.fill();x.lineWidth=.8;x.stroke();
+      x.beginPath();for(let l=Math.ceil(min(...z)/.012);l*.012<=max(...z);l++){const v=l*.012,cut=[];
+        for(let k=0;k<4;k++){const a=z[k],b=z[(k+1)%4];if(a<v!=b<v){const t=(v-a)/(b-a);cut.push(add(q[k],mul(sub(q[(k+1)%4],q[k]),t)))}}
+        for(let k=0;k+1<cut.length;k+=2){const A=pt(cut[k]),B=pt(cut[k+1]);if(A&&B){x.moveTo(A[0],A[1]);x.lineTo(B[0],B[1])}}}
+      x.lineWidth=1;x.strokeStyle="rgba("+ink+",.28)";x.stroke()}])}
+  // the other legs, each round from its foot to the top, with its shadow on the floor
+  p.forEach((r,m)=>{if(m==V.L)return;const c=foot(m),g=max(0,plane[0]*r[0]+plane[1]*r[1]+plane[2]-h[m]),Fw=add(tp.O,toW(tp.M,[...c,0]));
+    items.push([dist(Fw)+.02,()=>{const R_=.09+3*g,pts=Array.from({length:24},(_,i)=>pt([Fw[0]+R_*cos(P*i/12),Fw[1]+R_*sin(P*i/12),f(Fw[0]+R_*cos(P*i/12),Fw[1]+R_*sin(P*i/12))])).filter(Boolean),
+        S=pt(Fw);if(S&&pts.length>2){x.beginPath();trace(x,pts);x.closePath();const sh=x.createRadialGradient(S[0],S[1],0,S[0],S[1],max(...pts.map(q=>hypot(q[0]-S[0],q[1]-S[1]))));
+        sh.addColorStop(0,"rgba("+ink+","+(.5*exp(-g/.006)).toFixed(3)+")");sh.addColorStop(.45,"rgba("+ink+","+(.3*exp(-g/.006)).toFixed(3)+")");sh.addColorStop(1,"rgba("+ink+",0)");x.fillStyle=sh;x.fill()}}]);
+    items.push([dist(add(tp.O,toW(tp.M,[...c,.3]))),()=>{const q=[];for(const z of[0,.6])for(let i=0;i<24;i++){const s_=pt(add(tp.O,toW(tp.M,[c[0]+.0425*cos(P*i/12),c[1]+.0425*sin(P*i/12),z])));if(s_)q.push(s_)}
+      if(q.length>2){x.beginPath();trace(x,hull(q));x.closePath();x.fillStyle=C("amber-wash");x.fill();x.lineWidth=1;x.strokeStyle=C("amber-base");x.stroke()}}])});
+  // white spilt on the floor, as it lies
+  for(const q of pools)if(q.h){const w=wet(q),pts=w.parts.flat();if(!pts.length)continue;
+    items.push([min(...pts.map(v=>dist([v[0],v[1],f(v[0],v[1])])))-.05,()=>{const P3=v=>[v[0],v[1],f(v[0],v[1])+.0005];
+      for(const p_ of w.parts)if(poly(p_.map(P3))){x.fillStyle=C("white");x.fill()}
+      const Y=pt(P3(q.yo));if(Y){const c=cam(P3(q.yo));x.beginPath();x.arc(Y[0],Y[1],.04*fo/c[2],0,7);x.fillStyle=C("gold-accent");x.fill()}}])}
+  // what lies below the top, or beyond its edge; what lies on it is hidden by it
+  for(const b of balls){const L_=surf(b,[0,0,-1]),q=toF(tp.M,sub(b.x,tp.O));if(onTop(q[0],q[1])&&L_[2]>topZ(L_)-.003)continue;
+    const c=cam(b.x);if(c[2]<near+bound(b))continue;
+    items.push([dist(b.x),()=>{const d=unit(sub(b.x,E)),P2=X=>pt(X)||scr([0,0,1]);
+      if(b.k)body(b,d,P2);else{const S=P2(b.x);dot(S[0],S[1],max(1.5,b.r*fo/c[2]),b)}}])}
+  items.sort((p_,q)=>q[0]-p_[0]);for(const[,fn]of items)fn();
+  x.restore();x.strokeStyle=C("rule");x.lineWidth=1;x.strokeRect(.5,.5,W-1,W-1)}
 function draw(wall){
   // The page's clock runs at five sixths: everything as it would be, slow enough to follow.
   // The world moves in fixed steps of that clock, whatever the screen's rate: each step
@@ -866,7 +926,8 @@ function draw(wall){
     // from above, bodies below the top's height go under it, the rest over it
     // and lower things first, so what lies on a plate is drawn over it
     things=over=>{for(const d of balls.slice().sort((p,q)=>p.x[2]-q.x[2])){const L=surf(d,[0,0,-1]);if(L[2]>topZ(L)-.003==over)body(d,[0,0,-1],pl,max(2.5,(d.r||0)*s))}};
-  x.setTransform(dpr,0,0,dpr,0,0);x.clearRect(0,0,CW,CH);x.drawImage(map,0,0,W,W);
+  x.setTransform(dpr,0,0,dpr,0,0);x.clearRect(0,0,CW,CH);
+  if(view)eye(p,h,plane);else{x.drawImage(map,0,0,W,W);
   for(const q of pools)if(!q.on)pond(q,pl,s);
   things(false);
   // the legs from above, seen through the top: each round, from its foot up to the top,
@@ -890,7 +951,8 @@ function draw(wall){
   x.fillStyle=gr;x.fill(top);x.strokeStyle=C("amber-base");x.lineWidth=1.5;x.stroke(top);
   for(const q of pools)if(q.on)pond(q,pl,s);
   things(true);
-  x.font=col.font;camera(ea,o,s,"a");camera(eb,o,s,"b");
+  x.font=col.font;camera(ea,o,s,"a");camera(eb,o,s,"b")}
+  x.font=col.font;
   if(wide){elevation(p,plane,ea,W+32,.52*E+.01*W,E,"a");elevation(p,plane,eb,W+32,W/2+.52*E+.01*W,E,"b")}
   else{elevation(p,plane,ea,0,W*1.4,E,"a");elevation(p,plane,eb,E+24,W*1.4,E,"b")}
   const on=balls.filter(d=>!d.off),still=balls.filter(d=>d.off&&d.z).length,loose=balls.length-on.length-still,
@@ -918,16 +980,27 @@ function ease(k){let a=0,b=1,s;for(let i=0;i<20;i++){s=(a+b)/2;.75*s*(1-s)+s*s*s
 
 const ang=e=>{const r=c.getBoundingClientRect();return atan2(r.top+W/2-e.clientY,e.clientX-r.left-W/2)},
   legs=document.querySelectorAll("#legs button");
-c.onpointerdown=e=>{drag=ang(e);press=[e.clientX,e.clientY,e.timeStamp];c.setPointerCapture(e.pointerId);wake()};
-c.onpointermove=e=>{if(drag===null)return;const a=ang(e),d=a-drag;to+=(d+3*P)%(2*P)-P;drag=a};
-// a click (barely moved, quickly let go) on the plan drops a marble just there
+// from above, dragging turns the table round its middle; from a leg, sideways
+c.onpointerdown=e=>{drag=view?e.clientX:ang(e);press=[e.clientX,e.clientY,e.timeStamp];c.setPointerCapture(e.pointerId);wake()};
+c.onpointermove=e=>{if(drag===null)return;if(view){to+=(e.clientX-drag)*2/W;drag=e.clientX;return}const a=ang(e),d=a-drag;to+=(d+3*P)%(2*P)-P;drag=a};
+// a click (barely moved, quickly let go) drops a marble just there: from above, where it
+// is clicked; from a leg, where the eye's ray through it meets the top's underside (it is
+// laid on the top above) or the floor
 c.onpointerup=e=>{const r=c.getBoundingClientRect(),X=e.clientX-r.left,Y=e.clientY-r.top;
-  if(press&&hypot(e.clientX-press[0],e.clientY-press[1])<5&&e.timeStamp-press[2]<400&&X<W&&Y<W)drop((X-W/2)/(W/3.2),(W/2-Y)/(W/3.2));
+  if(press&&hypot(e.clientX-press[0],e.clientY-press[1])<5&&e.timeStamp-press[2]<400&&X<W&&Y<W){
+    if(!view)drop((X-W/2)/(W/3.2),(W/2-Y)/(W/3.2));
+    else{const V=lookout(),d=unit(add(V.F,add(mul(V.R,(X-W/2)/V.f),mul(V.U,(W/2-Y)/V.f)))),e_=toF(tp.M,sub(V.E,tp.O)),dt=toF(tp.M,d);
+      const t=dt[2]>0?(.6-e_[2])/dt[2]:-1,q=add(e_,mul(dt,t));
+      if(t>0&&onTop(q[0],q[1]))lay(q[0],q[1],1);
+      else{let a=0,b=0;for(let s_=.01;s_<8;s_+=.01){const Q=add(V.E,mul(d,s_));if(Q[2]<f(Q[0],Q[1])){a=s_-.01;b=s_;break}}
+        if(b){for(let i=0;i<30;i++){const m=(a+b)/2,Q=add(V.E,mul(d,m));Q[2]<f(Q[0],Q[1])?b=m:a=m}const Q=add(V.E,mul(d,a));if(abs(Q[0])<=1.6&&abs(Q[1])<=1.6)lay(Q[0],Q[1],0)}}}}
   drag=press=null};
 c.onpointercancel=()=>{drag=press=null};
 c.onkeydown=e=>{const r={ArrowLeft:1,ArrowUp:1,ArrowRight:-1,ArrowDown:-1}[e.key];if(r){to+=r*P/360;e.preventDefault();wake()}};
 legs.forEach(btn=>btn.onclick=()=>{n=+btn.textContent;legs.forEach(o=>o.setAttribute("aria-pressed",o===btn));carry();wake()});
 $("again").onclick=another;
+// the flip: from above, the room's frame; from a leg, the table's
+const VB=$("view");VB.onclick=()=>{view=1-view;VB.textContent=view?"from above":"from a leg";wake()};VB.hidden=false;
 // the button lays one somewhere on the top
 $("marble").onclick=()=>{const a=random()*2*P,r=sqrt(random())*.9*1.12*cos(P/n);lay(r*cos(a),r*sin(a),1)};
 addEventListener("resize",()=>{size();wake()});
