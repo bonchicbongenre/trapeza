@@ -41,8 +41,8 @@ a{color:var(--amber-accent);text-underline-offset:.15em}
 <span id="legs"><button>3</button><button aria-pressed="true">4</button><button>5</button><button>6</button></span>
 <button id="again">another floor</button>
 <button id="marble">drop a marble</button>
-<button id="glaze" hidden></button>
 <button id="theme" hidden>dark</button>
+<button id="glaze" hidden></button>
 </nav>
 <p class="sr" id="s" aria-live="polite"></p>
 <div class="label">
@@ -96,7 +96,7 @@ function rgb(s){const m=/oklch\(([\d.]+)(%?)\s+([\d.]+)\s+([\d.]+)/.exec(s);if(!
   return"rgb("+[4.0767416621*l-3.3077115913*q+.2309699292*s3,-1.2684380046*l+2.6097574011*q-.3413193965*s3,-.0041960863*l-.7034186147*q+1.707614701*s3]
     .map(v=>round(max(0,min(1,v<=.0031308?12.92*v:1.055*pow(v,1/2.4)-.055))*255))+")"}
 // The glazes: the floor in one family's three washes, the table in the middle glaze of
-// the family before it; the dot beside the theme button turns both on together, and the
+// the family before it; the dot after the theme button turns both on together, and the
 // marbles keep theirs. The drawing asks for its colours by their first names.
 const fams=[["qingbai","ru","longquan"],["crimson","junsplash","jun"],["gold","amber","rust"]];let g=0;
 function colours(){const cs=getComputedStyle(document.documentElement),bs=getComputedStyle(document.body),F=fams[g],T=fams[(g+2)%3][1],
