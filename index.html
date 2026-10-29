@@ -59,7 +59,7 @@ a{color:var(--amber-accent);text-underline-offset:.15em}
 const{PI:P,sin,cos,abs,hypot,min,max,round,exp,sqrt,pow,atan2,random}=Math,fl=Math.floor,
   $=i=>document.getElementById(i),c=$("c"),x=c.getContext("2d"),col={},C=k=>col["--"+k],
   calm=matchMedia("(prefers-reduced-motion: reduce)").matches;
-let n=4,th=0,to=0,drag=null,press=null,f,W,E,CW,CH,wide,dpr,map,said,balls=[],last=0,gone=0,old,t0;
+let n=4,th=0,to=0,drag=null,press=null,f,W,E,CW,CH,wide,dpr,map,said,balls=[],last=0,gone=0,old,t0,lv=[0,1];
 
 // Floors. Each is continuous, which is all the theorem asks of a floor.
 const rnd=a=>(random()*2-1)*a,
@@ -96,19 +96,23 @@ function rgb(s){const m=/oklch\(([\d.]+)(%?)\s+([\d.]+)\s+([\d.]+)/.exec(s);if(!
   return"rgb("+[4.0767416621*l-3.3077115913*q+.2309699292*s3,-1.2684380046*l+2.6097574011*q-.3413193965*s3,-.0041960863*l-.7034186147*q+1.707614701*s3]
     .map(v=>round(max(0,min(1,v<=.0031308?12.92*v:1.055*pow(v,1/2.4)-.055))*255))+")"}
 // The glazes: the floor in one family's three washes, the table in the middle glaze of
-// the family before it; the dot after the theme button turns both on together, and the
-// marbles keep theirs. The drawing asks for its colours by their first names.
+// the family before it, the marbles in the third (one end of it on the table, the other
+// off it). The dot after the theme button turns all three on together. The drawing asks
+// for its colours by their first names.
 const fams=[["qingbai","ru","longquan"],["crimson","junsplash","jun"],["gold","amber","rust"]];let g=0;
 function colours(){const cs=getComputedStyle(document.documentElement),bs=getComputedStyle(document.body),F=fams[g],T=fams[(g+2)%3][1],
-    as={"qingbai-wash":F[0]+"-wash","ru-wash":F[1]+"-wash","longquan-wash":F[2]+"-wash","amber-base":T+"-base","amber-wash":T+"-wash"};
+    M=fams[(g+1)%3],as={"qingbai-wash":F[0]+"-wash","ru-wash":F[1]+"-wash","longquan-wash":F[2]+"-wash",
+    "amber-base":T+"-base","amber-wash":T+"-wash","jun-base":M[2]+"-base","crimson-base":M[0]+"-base"};
   for(const t of["ink","paper","rule","amber-base","amber-wash","qingbai-wash","ru-wash","longquan-wash","jun-base","crimson-base"]){
     let v=rgb(cs.getPropertyValue("--"+(as[t]||t)));if(!/\d/.test(v))v=rgb(/wash|paper/.test(t)?bs.backgroundColor:bs.color);
     col["--"+t]=v;col["--"+t+"#"]=v.match(/\d+/g).map(Number)}
   col.font="12px "+cs.getPropertyValue("--typewriter")}
 
-// The plan's floor: three celadon washes, low to high, and ink contours.
+// The plan's floor: three washes, low to high, each a third of its heights, and ink
+// contours. The elevations keep the same thirds (lv), so a colour is a height in both.
 function paint(){const N=min(round(W*dpr),900),o=document.createElement("canvas"),hs=new Float32Array(N*N);let lo=1,hi=-1;
   for(let j=0;j<N;j++)for(let i=0;i<N;i++){const v=hs[j*N+i]=f((2*i/N-1)*1.6,(1-2*j/N)*1.6);if(v<lo)lo=v;if(v>hi)hi=v}
+  lv=[lo,hi];
   o.width=o.height=N;const g=o.getContext("2d"),img=g.createImageData(N,N),d=img.data,
     band=[C("qingbai-wash#"),C("ru-wash#"),C("longquan-wash#")],ink=C("ink#");
   for(let k=0;k<N*N;k++){const v=hs[k],b=band[max(0,min(2,fl(3*(v-lo)/(hi-lo+1e-9))))],e=v/.012,on=abs(e-round(e))<.07;
@@ -190,6 +194,10 @@ function elevation(p,plane,e,X,Y,w,tag){const s=w/2.8,cx=X+w/2,leg=.6*s,lw=.085*
         for(let i=0;i<=56;i++){const t=-1.4+2.8*i/56;line.push([cx+t*s,gy(t,dk)])}
         ground.moveTo(X,Y+.12*w);for(const q of line)ground.lineTo(q[0],q[1]);
         ground.lineTo(X+w,Y+.12*w);ground.closePath();x.fillStyle=C("qingbai-wash");x.fill(ground);
+        // the plan's thirds, drawn at their heights: above the first the middle wash, above
+        // the second the high one
+        x.save();x.clip(ground);for(const k of[1,2]){const yk=Y-(lv[0]+(lv[1]-lv[0])*k/3)*2*s;
+          x.fillStyle=C(k<2?"ru-wash":"longquan-wash");x.fillRect(X,Y-.6*w,w,max(0,yk-Y+.6*w))}x.restore();
         // the ridge line lives inside its own ground, so none of it shows past the green
         x.save();x.clip(ground);x.beginPath();trace(x,line);x.lineWidth=2;x.strokeStyle=C("ink");x.stroke();x.restore()}
       post(r)}

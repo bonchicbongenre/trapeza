@@ -29,7 +29,9 @@ What itsthefloor.fyi does. A golf pass must keep every line true.
     drawn back to front, and each is hidden by exactly the part of the slab nearer
     the camera than it, so nothing appears or vanishes except by moving. Heights are
     drawn at twice their size, and the table is one rigid piece in that drawing. The ground slices belong to the feet, so the floor
-    holds still; a marble on the floor carries a short line of its own ground.
+    holds still; a marble on the floor carries a short line of its own ground. Each
+    ground is in the plan's three washes, banded at the same heights, so a colour
+    is a height in every view.
  8. A screen reader hears "It is still.", "It rocks.", "One foot is in the air."
     or "N feet are in the air."
  9. The label gives the page's own size, read live, and one line: "Turn it." The
@@ -48,16 +50,18 @@ What itsthefloor.fyi does. A golf pass must keep every line true.
     gravity) that holds it still on a slope gentler than about 0.4 degrees; it
     rides with the table when the table turns, falls off the edge onto the floor,
     rolls on until it rests in a hollow or leaves the map. Marbles knock into one
-    another. A marble is Jun blue on the table and Jun crimson once it has left
-    it, in every view. A screen reader hears how many are on the table, rolling,
+    another. A marble is one glaze on the table and another once it has left it,
+    in every view: Jun blue and crimson at first (item 14). A screen reader hears how many are on the table, rolling,
     resting, and gone.
 12. Each elevation is a camera with a frame: nothing in it is drawn outside its
     panel, and a marble out of shot is simply not in that view.
 13. The favicon is the table from above, in amber, lighter on dark tab bars.
-14. A dot after the theme button, last in the row, turns the glazes: the floor to
-    the next family, and the table to the middle glaze of the family before the
-    floor's (amber on celadon, Ru on Jun, purple splash on tenmoku), and round
-    again. The dot wears the middle glaze of the floor to come; a screen reader
-    hears that family's name. The marbles keep theirs. The drawing fades from one
-    to the next as it does for the theme; nothing is kept; without script there
-    is no dot.
+14. A dot after the theme button, last in the row, turns the glazes. The floor, the
+    table and the marbles each take one of the three families, and a press moves
+    each to the next: celadon floor, amber table, Jun marbles (blue on the table,
+    crimson off it); then a Jun floor, a Ru table, tenmoku marbles (rust and
+    gold); then a tenmoku floor, a purple-splash table, celadon marbles (Longquan
+    and qingbai); and round again. The dot wears the middle glaze of the floor to
+    come; a screen reader hears that family's name. The drawing fades from one to
+    the next as it does for the theme; nothing is kept; without script there is
+    no dot.
