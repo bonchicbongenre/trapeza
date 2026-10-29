@@ -49,9 +49,10 @@ What itsthefloor.fyi does. A golf pass must keep every line true.
     ground is in the plan's three washes, banded at the same heights, so a colour
     is a height in every view, as the top's shade is.
  8. A screen reader hears "It is still.", "It rocks.", "One foot is in the air."
-    or "N feet are in the air.", then what is on the table ("2 marbles and 1 egg
-    are on the table."), how many roll on the floor, rest in a hollow, rolled
-    away, broke, and are cracked.
+    or "N feet are in the air.", then, for a moment after one, "Somebody
+    sneezed.", then what is on the table ("2 marbles, 1 meatball and 1 plate of
+    spaghetti are on the table."), how many roll on the floor, rest in a hollow,
+    rolled away, rolled out the door (meatballs), broke, and are cracked.
  9. The label gives the page's own size, read live, and one line: "Turn it." The
     title (the tab, and any preview of a link) is "It's not your table that's
     wobbly." The console gives the Greek
@@ -65,15 +66,22 @@ What itsthefloor.fyi does. A golf pass must keep every line true.
     as 40 cm). Clicking the plan lays one just there, on the top or the floor;
     "drop a marble" lays one somewhere on the top. Each lays one more, at rest,
     just touching what it is laid on; where something already lies, at the
-    nearest clear place beside it. One time in thirty it is an egg (item 16).
+    nearest clear place beside it, never under a plate's rim, and on the floor
+    clear of the legs and the top. One time in thirty it is an egg (item 16);
+    one time in sixty, a plate of spaghetti (item 17).
 12. One world moves them all: rigid bodies in their true shapes under gravity,
     and, wherever two things touch (two bodies, a body and the floor, the top or
     a leg), a push that keeps them from passing into each other and gives back a
-    fixed part of the speed they met at (glass on glass 0.9, on wood 0.6, egg
-    0.3; slower than 8 cm/s, nothing), Coulomb friction (0.4), rolling resistance
-    (a lever of 0.056 mm, so a marble holds still on a slope gentler than about
-    0.4 degrees), and the twist friction of the contact's patch. Contacts are
-    found between the true shapes. A marble rolls down a slope at five-sevenths of
+    part of the speed they met at, the lesser of the two sides' (glass 0.9, wood
+    0.6, china 0.5, egg 0.3, meatball 0.1, spaghetti 0.05; slower than 8 cm/s,
+    nothing); Coulomb friction, the geometric mean of the two sides' (glass,
+    wood and egg 0.4, china 0.35, meatball and spaghetti 0.6); rolling
+    resistance, the larger of the two sides' levers (0.056 mm, so a marble holds
+    still on a slope gentler than about 0.4 degrees; a meatball's 1.5 mm, 3 in
+    100); and the twist friction of the contact's patch. Contacts are found
+    between the true shapes; the solver's rounds go on until they agree, at most
+    ten, and forty where a plate presses on lighter things. Moving air drags
+    on each body by its drag coefficient and frontal area. A marble rolls down a slope at five-sevenths of
     gravity times it; on a turning table it rolls, gaining two-sevenths of what
     the top beneath it gains, and does not simply ride; past an edge it rolls over
     it and falls, bounces, rolls on until it rests in a hollow or leaves the map.
@@ -111,3 +119,22 @@ What itsthefloor.fyi does. A golf pass must keep every line true.
     one met as hard as a fall of 20 cm breaks open. A broken egg's white lies
     round its yolk, with bits of shell, where it broke; the pool spreads over half
     a second as drawn, not as a liquid followed.
+17. On top of spaghetti, all covered with cheese: a dinner plate, china, 26 cm
+    across, its well 16 cm, its rim rising to 2.4 cm; on it a heap of spaghetti in
+    sauce, 4 cm high, slumping into the plate as a heap does, its strands, sauce
+    and cheese drawn on it; plate and heap 973 g, one rigid body, standing on the
+    rim of its foot (met at sixteen points), riding the table by friction and
+    sliding if the table is turned hard. A sphere meets it by its true section, so
+    a marble can tuck under the rim's outer centimetre; an egg meets its top from
+    above and its outline from beside. On the heap a meatball, 4 cm across, 35 g,
+    set just so: where the plate's lean leaves it 99 in 100 of the way to
+    rolling. In two and a half to five seconds somebody sneezes: from uphill of
+    it, 30 cm off and 30 cm up, a round turbulent jet at 4.5 m/s from a mouth 2 cm
+    across (as measured by schlieren, 2013), keeping that speed for six widths,
+    then falling as one over the distance, a gust of 0.35 s where its front
+    arrives. It pushes the meatball with about a six-hundredth of its weight --
+    enough at its edge, and nothing a marble or an egg on the table would notice
+    -- and the meatball rolls down the heap, over the rim, off the table, and
+    rolls on as the floor lets it; out of the map, it rolled out the door. On a
+    table that rocks, it may go before anyone sneezes. Only the meatball rolls:
+    the pasta, the sauce and the cheese stay put, as at that gust they would.

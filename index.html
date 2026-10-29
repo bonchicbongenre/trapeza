@@ -106,7 +106,7 @@ const fams=[["qingbai","ru","longquan"],["crimson","junsplash","jun"],["gold","a
 function colours(){const cs=getComputedStyle(document.documentElement),bs=getComputedStyle(document.body),F=fams[g],T=fams[(g+2)%3][1],
     M=fams[(g+1)%3],as={"qingbai-wash":F[0]+"-wash","ru-wash":F[1]+"-wash","longquan-wash":F[2]+"-wash",
     "amber-base":T+"-base","amber-wash":T+"-wash","jun-base":M[2]+"-base","crimson-base":M[0]+"-base","junsplash-wash":M[1]+"-wash"};
-  for(const t of["ink","paper","rule","amber-base","amber-wash","qingbai-wash","ru-wash","longquan-wash","jun-base","crimson-base","junsplash-wash","gold-accent"]){
+  for(const t of["ink","paper","rule","amber-base","amber-wash","qingbai-wash","ru-wash","longquan-wash","jun-base","crimson-base","junsplash-wash","gold-accent","gold-wash","gold-base","rust-base","rust-accent"]){
     let v=rgb(cs.getPropertyValue("--"+(as[t]||t)));if(!/\d/.test(v))v=rgb(/wash|paper/.test(t)?bs.backgroundColor:bs.color);
     col["--"+t]=v;col["--"+t+"#"]=v.match(/\d+/g).map(Number)}
   col.font="12px "+cs.getPropertyValue("--typewriter")}
@@ -204,9 +204,11 @@ function elevation(p,plane,e,X,Y,w,tag){const s=w/2.8,cx=X+w/2,leg=.6*s,lw=.085*
       x.fillStyle=C("amber-wash");x.fill();x.lineWidth=1.1;x.strokeStyle=C("amber-base");x.stroke();
       if(!rise&&!flush&&dz>.3){x.beginPath();for(let i=0;i<24;i++)x.lineTo(...end(P*i/12));x.closePath();x.fillStyle=mix(.6);x.fill();x.stroke()}};
   slab();
-  // the feet, the bodies and the pools in shot, back to front
+  // the feet, the bodies and the pools in shot, back to front; what lies on a plate, just
+  // after its plate
+  const key=([r,b])=>{if(b&&!b.R&&b.k!=3)for(const o of balls)if(o.k==3){const t=toF(o.M,sub(b.x,o.x));if(hypot(t[0],t[1])<PR&&t[2]>0)return deep(o.x)-.001}return deep(r)};
   for(const[r,b]of[...p.map(r=>[r]),...[...balls.map(b=>[b.x,b]),...pools.map(q=>[pw(q,0,0),q])]
-      .filter(([r,b])=>abs(r[0]*e[0]+r[1]*e[1])<1.42+(b.R||0))].sort((i,j)=>deep(j[0])-deep(i[0]))){
+      .filter(([r,b])=>abs(r[0]*e[0]+r[1]*e[1])<1.42+(b.R||bound(b)))].sort((i,j)=>key(j)-key(i))){
     const dk=deep(r),near=[];
     // what stands here is hidden by the part of the top nearer the camera than it, and by
     // that part's outline too: around the top's own corners the hidden shape reaches half
@@ -230,7 +232,7 @@ function elevation(p,plane,e,X,Y,w,tag){const s=w/2.8,cx=X+w/2,leg=.6*s,lw=.085*
         nf=unit([f(L[0]-q,L[1])-f(L[0]+q,L[1]),f(L[0],L[1]-q)-f(L[0],L[1]+q),2*q]),m=unit(add(mul(nf,1-w),mul(tp.M[2],w))),
         S=surf(b,mul(m,-1)),A=mid(S,u(S)),k=-(m[0]*e[0]+m[1]*e[1])/m[2],r=atan2(k,1)-atan2(2*k,1),cr=cos(r),sr=sin(r),
         pt=X=>{const a=((X[0]-S[0])*e[0]+(X[1]-S[1])*e[1])*s,c=-(X[2]-S[2])*s;return[A[0]+a*cr-c*sr,A[1]+a*sr+c*cr]};
-      if(b.fl)line(tm-(b.k?EGG.R+.02:.06),tm+(b.k?EGG.R+.02:.06));
+      if(b.fl)line(tm-bound(b)-.04,tm+bound(b)+.04);
       if(b.k)body(b,[d[0],d[1],0],pt);else{const c=pt(b.x),g=rad/(hypot(c[0]-A[0],c[1]-A[1])||1);dot(A[0]+(c[0]-A[0])*g,A[1]+(c[1]-A[1])*g,rad,b)}}
     // a pool: the white a thin layer on its ground, the yolk a dome, the bits of shell
     else if(b){const ts=edge(b).map(X=>X[0]*e[0]+X[1]*e[1]),t0=min(...ts),t1=max(...ts),g=spread(b),w=max(1.2,.008*s),
@@ -311,25 +313,53 @@ const TAU=1,EGG=(()=>{const cut=(o,d)=>{let m=0,mt=0,ia=0,it=0,q;
   mo=c=>[c[3]-2*tc*c[1]+c[0]*tc*tc,c[2]],[ts,as]=mo(s),[ty,ay]=mo(y),f=((EL*EL-EB*EB)/(EL*EL+EB*EB))**2;
   return{m,tc,R:EL/2+abs(tc),boiled:[ts+ty,ts+ty,as+ay],shell:[ts+f*ty,ts+f*ty,as],core:[(1-f)*ty,(1-f)*ty,ay]}})();
 
-// A body: a marble (k 0) or an egg (k 1); its centre of mass x, its frame M, velocity v,
-// its shell's angular momentum L and turning w, and a raw egg's liquid's angular momentum
-// H. A marble is glass, 2.5 g a cubic centimetre. A body's core is a marble's centre, or an
-// egg's shell pulled in EM (6 mm) all round, everywhere still convex: how near two cores
-// are, less their margins, is how near the bodies are.
-const MM=160000*4/3*P*RAD**3,MI=.4*MM*RAD*RAD,EM=.015,
+// A dinner plate, ceramic, 26 cm across: a flat well 16 cm across, a rim rising to 2.4 cm,
+// 4.8 mm thick, 2.4 g a cubic centimetre; on it a heap of spaghetti in its sauce and cheese
+// (0.7 g a cubic centimetre, loosely packed), 4 cm high, slumping into the plate as a heap
+// does -- a bell, 5.2 cm to where it has fallen to a third -- held to the plate and to its
+// own shape by its tangle and its sauce: nothing here is strong enough to part them.
+// Heights over the plate's foot, at r from its axis: the dish, the heap, and what lies on
+// top. Its mass, centre and moments, summed over thin rings.
+const PR=.325,PW=.2,PH=.06,PT=.012,SG=.13,HH=.1,
+  dish=r=>PT+(r>PW?(PH-PT)*((min(r,PR)-PW)/(PR-PW))**2:0),heap=r=>PT+HH*exp(-r*r/SG/SG),
+  heapD=r=>-2*r/SG/SG*HH*exp(-r*r/SG/SG),
+  pile=r=>max(dish(r),heap(r)),pileD=r=>heap(r)>dish(r)?heapD(r):r>PW&&r<PR?2*(PH-PT)*(r-PW)/(PR-PW)**2:0,
+  // where the heap meets the dish; and the heap's point furthest along (s across, z up)
+  RE=(()=>{let a=0,b=PR;for(let i=0;i<50;i++){const m=(a+b)/2;heap(m)>dish(m)?a=m:b=m}return a})(),
+  // (on the bell's inner part, where its slope runs one way, the slope meets the
+  // direction's; past it the heap's edge at RE is the furthest)
+  crown=(s,z)=>{let lo=0,hi=min(RE,SG/Math.SQRT2);if(s+z*heapD(hi)>0)hi=RE;else for(let i=0;i<40;i++){const m=(lo+hi)/2;s+z*heapD(m)>0?lo=m:hi=m}
+    const r=hi==RE?RE:(lo+hi)/2;return s*r+z*heap(r)>s*RE+z*heap(RE)?[r,heap(r)]:[RE,heap(RE)]},
+  PLATE=(()=>{let m=0,mz=0,iz=0,ir=0;
+    for(let i=0;i<2000;i++){const r=PR*(i+.5)/2000,dr=PR/2000,z0=max(0,dish(r)-PT),z1=dish(r),h=heap(r)>z1?heap(r)-z1:0,
+        a=2*P*r*dr,dp=a*(z1-z0)*153600,dh=a*h*44800,zp=(z0+z1)/2,zh=z1+h/2;
+      for(const[d,z,t]of[[dp,zp,z1-z0],[dh,zh,h]]){m+=d;mz+=d*z;iz+=d*r*r;ir+=d*(r*r/2+z*z+t*t/12)}}
+    const zc=mz/m;return{m,zc,I:[ir-m*zc*zc,ir-m*zc*zc,iz],B:hypot(PR,max(PH-zc,zc))}})();
+
+// A body: a marble (k 0), an egg (1), a meatball (2) or a plate of spaghetti (3); its
+// centre of mass x, its frame M, velocity v, its angular momentum L (an egg's, its shell's)
+// and turning w, and a raw egg's liquid's angular momentum H. A marble is glass, 2.5 g a
+// cubic centimetre, 16 mm across. A meatball is 4 cm across, 1.05 g a cubic centimetre. A
+// body's core is a sphere's centre, an egg's shell pulled in EM (6 mm) all round,
+// everywhere still convex, or a plate itself: how near two cores are, less their margins,
+// is how near the bodies are.
+const MM=160000*4/3*P*RAD**3,MI=.4*MM*RAD*RAD,EM=.015,MR=.05,MB=67200*4/3*P*MR**3,
   eggS=u=>{const p=far(u);p[2]-=EGG.tc;return p},
-  surf=(b,u)=>b.k?add(b.x,toW(b.M,eggS(toF(b.M,u)))):add(b.x,mul(u,RAD)),
-  core=(b,u)=>b.k?(u=unit(u),sub(surf(b,u),mul(u,EM))):b.x,
-  rim=b=>b.k?EM:RAD,bound=b=>b.k?EGG.R:RAD,
-  // the shell's moments, inverted, applied to u in the world; and the liquid's
-  inv=(b,u)=>b.k?toW(b.M,toF(b.M,u).map((v,i)=>v/b.I[i])):mul(u,1/MI),
+  // the plate with its heap, furthest along u in its own frame (from its centre of mass)
+  plateS=u=>{const s=hypot(u[0],u[1]),c=[u[0]/(s||1),u[1]/(s||1)],
+      q=[[PW,0],[PR,PH],crown(s,u[2])].reduce((b,p)=>s*p[0]+u[2]*p[1]>s*b[0]+u[2]*b[1]?p:b);return[c[0]*q[0],c[1]*q[0],q[1]-PLATE.zc]},
+  surf=(b,u)=>b.r?add(b.x,mul(u,b.r)):add(b.x,toW(b.M,(b.k==1?eggS:plateS)(toF(b.M,u)))),
+  core=(b,u)=>b.r?b.x:b.k==1?(u=unit(u),sub(surf(b,u),mul(u,EM))):surf(b,u),
+  rim=b=>b.r||(b.k==1?EM:0),bound=b=>b.r||(b.k==1?EGG.R:PLATE.B),
+  // the moments, inverted, applied to u in the world; and a raw egg's liquid's
+  inv=(b,u)=>b.r?mul(u,1/b.I[0]):toW(b.M,toF(b.M,u).map((v,i)=>v/b.I[i])),
   invC=(b,u)=>toW(b.M,toF(b.M,u).map((v,i)=>v/b.C[i])),
   // a push J at r from the centre, and a twist T
   kick=(b,J,r)=>{b.v=add(b.v,mul(J,1/b.m));twirl(b,crs(r,J))},
   twirl=(b,T)=>{b.L=add(b.L,T);b.w=add(b.w,inv(b,T))};
 // A free body turns as a symmetric top does: about its angular momentum, at its size over
 // the moment across the axis, and about its own axis at the rate the other moment adds. A
-// marble, alike every way, needs only the first, and shows none of it.
+// marble or a meatball, alike every way, needs only the first; a marble shows none of it.
 function spin(o,h){const l=len(o.L);if(!o.k||!l)return;
   let M=o.M.map(e=>rot(e,mul(o.L,1/l),l/o.I[0]*h));const a=dot3(o.L,M[2])*(1/o.I[2]-1/o.I[0])*h,c=cos(a),s=sin(a);
   M=[add(mul(M[0],c),mul(M[1],s)),sub(mul(M[1],c),mul(M[0],s)),M[2]];
@@ -387,7 +417,7 @@ function spun(a,b,h){const R=(i,j)=>a.reduce((s,e,k)=>s+b[k][i]*e[j],0),v=[R(2,1
 // and Keerthi's walk toward the origin over their difference. Null where they overlap.
 function gjk(sa,sb){let a=sa([1,0,0]),b=sb([-1,0,0]),Q=[[sub(a,b),a,b]],w=[1],v=Q[0][0];
   for(let i=0;i<40;i++){const vv=dot3(v,v);if(vv<1e-20)return null;
-    a=sa(mul(v,-1));b=sb(v);const p=sub(a,b);if(vv-dot3(v,p)<=vv*1e-10)break;
+    a=sa(mul(v,-1));b=sb(v);const p=sub(a,b);if(vv-dot3(v,p)<=vv*1e-6)break;
     const r=least([...Q,[p,a,b]]);if(!r||r.Q.length>3)return null;({Q,w,v}=r)}
   a=[0,0,0];b=[0,0,0];Q.forEach((q,i)=>{a=add(a,mul(q[1],w[i]));b=add(b,mul(q[2],w[i]))});
   return{a,b,d:len(v)}}
@@ -406,22 +436,52 @@ function solve(A,r){const k=r.length,M=A.map((row,i)=>[...row,r[i]]),s=max(1e-30
     for(let j=i+1;j<k;j++){const g=M[j][i]/M[i][i];for(let l=i;l<=k;l++)M[j][l]-=g*M[i][l]}}
   for(let i=k-1;i>=0;i--){let t=M[i][k];for(let j=i+1;j<k;j++)t-=M[i][j]*z[j];z[i]=t/M[i][i]}return z}
 
-// The floor under a body: the floor's point under the body's lowest point toward it, and
-// the floor's normal there, settled in a few rounds; the body's point nearest; the gap.
-function ground(b){let m=[0,0,1],p,s;
-  for(let i=0;i<4;i++){s=surf(b,mul(m,-1));const e=1e-5;p=[s[0],s[1],f(s[0],s[1])];
-    m=unit([(f(s[0]-e,s[1])-f(s[0]+e,s[1]))/(2*e),(f(s[0],s[1]-e)-f(s[0],s[1]+e))/(2*e),1])}
-  s=surf(b,mul(m,-1));return{n:m,p,s,d:dot3(sub(s,p),m)}}
+// A surface z=F(x,y) in a frame M at O, under a body: the surface's point under the body's
+// lowest point toward it, and its normal there, settled in a few rounds; the body's point
+// nearest; the gap. The floor is such a surface in the room's frame; the top of a plate of
+// spaghetti in the plate's.
+const I3=[[1,0,0],[0,1,0],[0,0,1]],WOOD={e:.6,mu:.4};
+function field(b,O,M,F){let m=[0,0,1],p,s,q;
+  for(let i=0;i<4;i++){s=surf(b,toW(M,mul(m,-1)));q=toF(M,sub(s,O));const e=1e-5;p=[q[0],q[1],F(q[0],q[1])];
+    m=unit([(F(q[0]-e,q[1])-F(q[0]+e,q[1]))/(2*e),(F(q[0],q[1]-e)-F(q[0],q[1]+e))/(2*e),1])}
+  const n=toW(M,m),P=add(O,toW(M,p));s=surf(b,mul(n,-1));return{n,p:P,s,d:dot3(sub(s,P),n),q:p}}
+const ground=b=>field(b,[0,0,0],I3,f),PASTA={e:.05,mu:.6},CHINA={e:.5,mu:.35};
+// The point of a plate of spaghetti's section (r out from its axis, z up from its foot)
+// nearest (a,b), and whether (a,b) lies inside it: its top (heap and china), the end of its
+// rim, its underside, each searched along its length and the nearest refined.
+function sect(a,b){const under=r=>max(0,dish(r)-PT),best=[1/0,0,0],
+    curve=F=>{let k=0,bd=1/0;for(let i=0;i<=48;i++){const r=PR*i/48,d=(r-a)**2+(F(r)-b)**2;if(d<bd){bd=d;k=i}}
+      let lo=PR*max(0,k-1)/48,hi=PR*min(48,k+1)/48;
+      for(let i=0;i<40;i++){const m1=lo+(hi-lo)/3,m2=hi-(hi-lo)/3;(m1-a)**2+(F(m1)-b)**2<(m2-a)**2+(F(m2)-b)**2?hi=m2:lo=m1}
+      const r=(lo+hi)/2,d=(r-a)**2+(F(r)-b)**2;if(d<best[0])best.splice(0,3,d,r,F(r))};
+  curve(pile);curve(under);const z=max(PH-PT,min(PH,b)),d=(PR-a)**2+(z-b)**2;if(d<best[0])best.splice(0,3,d,PR,z);
+  return[best[1],best[2],a<=PR&&b>=under(a)&&b<=pile(a)]}
+// A body and a plate of spaghetti. A sphere, by the plate's section in the plane through the
+// sphere's centre and the plate's axis, exactly; an egg over the plate meets its top as a
+// surface, and beside it the plate's outline (too large to pass under the rim, it can meet
+// nothing else). The material is the heap's or the china's, wherever they meet.
+function pair(o,Pl){const t=toF(Pl.M,sub(o.x,Pl.x)),a=hypot(t[0],t[1]),b=t[2]+PLATE.zc;
+  if(o.r){const e=a>1e-9?[t[0]/a,t[1]/a]:[1,0],[r,z,inside]=sect(a,b),dr=a-r,dz=b-z,l=hypot(dr,dz)||1e-12,s=inside?-1:1,
+      n=toW(Pl.M,[s*dr/l*e[0],s*dr/l*e[1],s*dz/l]);
+    return{n,pa:sub(o.x,mul(n,o.r)),pb:add(Pl.x,toW(Pl.M,[r*e[0],r*e[1],z-PLATE.zc])),d:s*l-o.r,mat:z>dish(r)+1e-9?PASTA:CHINA}}
+  if(a<PR&&b>dish(a)-PT){const g=field(o,Pl.x,Pl.M,(x,y)=>pile(hypot(x,y))-PLATE.zc),r=hypot(g.q[0],g.q[1]);
+    return{n:g.n,pa:g.s,pb:g.p,d:g.d,mat:heap(r)>dish(r)?PASTA:CHINA}}
+  const z=gjk(u=>core(o,u),u=>surf(Pl,u));
+  if(z){const m=unit(sub(z.a,z.b));return{n:m,pa:sub(z.a,mul(m,rim(o))),pb:z.b,d:z.d-rim(o),mat:CHINA}}
+  const m=unit(sub(o.x,Pl.x)),pa=surf(o,mul(m,-1)),pb=surf(Pl,m);return{n:m,pa,pb,d:dot3(sub(pa,pb),m),mat:CHINA}}
 // A contact: body A and body B (or the floor or the table: its point there moving at V,
 // turning at W), the normal n from B toward A, the touching points, and their gap d (less
-// than nothing where pressed in); the bounce, the twist's lever, how hard it is to move
-// each way there, the speed they meet at, and the last step's pushes there to begin from.
-function meet(A,B,n,pa,pb,d,V,W,key,e,h){
-  const ra=sub(pa,A.x),rb=B&&sub(pb,B.x),t1=unit(crs(n,abs(n[0])<.6?[1,0,0]:[0,1,0])),t2=crs(n,t1),
+// than nothing where pressed in); the bounce (the lesser of the two sides'), friction (their
+// geometric mean), the rolling and twist levers (the larger), how hard it is to move each
+// way there, the speed they meet at, and the last step's pushes there to begin from. The
+// other side's material is B's own, or mat's: wood for the floor and the table, the
+// spaghetti or the china of a plate.
+function meet(A,B,n,pa,pb,d,V,W,key,mat,h){
+  const ra=sub(pa,A.x),rb=B&&sub(pb,B.x),t1=unit(crs(n,abs(n[0])<.6?[1,0,0]:[0,1,0])),t2=crs(n,t1),o_=mat||B,
     kl=(u,v)=>dot3(u,v)*(1/A.m+(B?1/B.m:0))+dot3(crs(ra,u),inv(A,crs(ra,v)))+(B?dot3(crs(rb,u),inv(B,crs(rb,v))):0),
     ka=(u,v)=>dot3(u,inv(A,v))+(B?dot3(u,inv(B,v)):0),
     i2=(a,b,c,d)=>{const q=a*d-b*c;return[d/q,-b/q,-c/q,a/q]},
-    c={A,B,n,ra,rb,d,V,W,h,key,t1,t2,e:min(A.e,B?B.e:e),tw:max(A.tw,B?B.tw:0),kn:1/kl(n,n),
+    c={A,B,n,ra,rb,d,V,W,h,key,t1,t2,e:min(A.e,o_.e),mu:sqrt(A.mu*o_.mu),rr:max(A.rr,B?B.rr:0),tw:max(A.tw,B?B.tw:0),kn:1/kl(n,n),
       kt:i2(kl(t1,t1),kl(t1,t2),kl(t2,t1),kl(t2,t2)),kr:i2(ka(t1,t1),ka(t1,t2),ka(t2,t1),ka(t2,t2)),kw:1/ka(n,n),ln:0,lt:[0,0],lr:[0,0],lw:0},
     o=A.hm&&A.hm.get(key);
   c.v0=dot3(sub(add(A.v,crs(A.w,ra)),B?add(B.v,crs(B.w,rb)):V),n);c.o=o;
@@ -434,7 +494,7 @@ function warm(c){const{A,B,n,ra,rb,t1,t2,h,o}=c;if(!o)return;const s=h/o[4];
   kick(A,J,ra);twirl(A,T);if(B){kick(B,mul(J,-1),rb);twirl(B,mul(T,-1))}}
 // One push at a contact: mode 0 keeps the gap, and parts any overlap by a fifth a step (at
 // most 4 cm/s, so nothing is flung); mode 1 keeps the gap without the parting; mode 2 is
-// the bounce. Then friction, within MU of the push; rolling and twist, within their levers.
+// the bounce. Then friction, within mu of the push; rolling and twist, within their levers.
 // It returns how much it changed the speed there, so the rounds can stop when they agree.
 function push(c,mode){const{A,B,n,ra,rb,h}=c,rel=()=>sub(add(A.v,crs(A.w,ra)),B?add(B.v,crs(B.w,rb)):c.V),wr=()=>sub(A.w,B?B.w:c.W);
   if(mode==2){if(!(c.v0<-VT&&c.ln>0))return 0;c.hit=1}
@@ -442,13 +502,13 @@ function push(c,mode){const{A,B,n,ra,rb,h}=c,rel=()=>sub(add(A.v,crs(A.w,ra)),B?
     l=max(0,c.ln-c.kn*(dot3(rel(),n)-tg)),dl=l-c.ln;
   c.ln=l;kick(A,mul(n,dl),ra);if(B)kick(B,mul(n,-dl),rb);
   if(mode==2)return 0;
-  let v=rel(),K=c.kt,a=c.lt[0]-K[0]*dot3(v,c.t1)-K[1]*dot3(v,c.t2),b=c.lt[1]-K[2]*dot3(v,c.t1)-K[3]*dot3(v,c.t2),m=hypot(a,b),lim=MU*c.ln;
+  let v=rel(),K=c.kt,a=c.lt[0]-K[0]*dot3(v,c.t1)-K[1]*dot3(v,c.t2),b=c.lt[1]-K[2]*dot3(v,c.t1)-K[3]*dot3(v,c.t2),m=hypot(a,b),lim=c.mu*c.ln;
   if(m>lim){a*=lim/m;b*=lim/m}
   let J=add(mul(c.t1,a-c.lt[0]),mul(c.t2,b-c.lt[1]));const ch=max(abs(dl),len(J))/c.kn;c.lt=[a,b];kick(A,J,ra);if(B)kick(B,mul(J,-1),rb);
-  v=wr();K=c.kr;a=c.lr[0]-K[0]*dot3(v,c.t1)-K[1]*dot3(v,c.t2);b=c.lr[1]-K[2]*dot3(v,c.t1)-K[3]*dot3(v,c.t2);m=hypot(a,b);lim=RR*c.ln;
+  v=wr();K=c.kr;a=c.lr[0]-K[0]*dot3(v,c.t1)-K[1]*dot3(v,c.t2);b=c.lr[1]-K[2]*dot3(v,c.t1)-K[3]*dot3(v,c.t2);m=hypot(a,b);lim=c.rr*c.ln;
   if(m>lim){a*=lim/m;b*=lim/m}
   J=add(mul(c.t1,a-c.lr[0]),mul(c.t2,b-c.lr[1]));c.lr=[a,b];twirl(A,J);if(B)twirl(B,mul(J,-1));
-  lim=MU*c.tw*c.ln;a=max(-lim,min(lim,c.lw-c.kw*dot3(wr(),n)));J=mul(n,a-c.lw);c.lw=a;twirl(A,J);if(B)twirl(B,mul(J,-1));return ch}
+  lim=c.mu*c.tw*c.ln;a=max(-lim,min(lim,c.lw-c.kw*dot3(wr(),n)));J=mul(n,a-c.lw);c.lw=a;twirl(A,J);if(B)twirl(B,mul(J,-1));return ch}
 
 // One step of the world, h seconds, the table moving from pose a to pose b: gravity; a raw
 // egg's liquid drawn round; the contacts; ten rounds of pushes; the bodies move; four
@@ -458,42 +518,63 @@ function push(c,mode){const{A,B,n,ra,rb,h}=c,rel=()=>sub(add(A.v,crs(A.w,ra)),B?
 // met harder breaks open: as hard as a fall of 20 cm (between a crack without spilling at
 // 1 m/s and a burst at 4). A body asleep -- still for half a second, on nothing moving --
 // is left out until something wakes it.
-let pools=[],ids=0;
+let pools=[],ids=0,sneeze=null,door=0;
+// A sneeze: a round turbulent jet from a mouth 2 cm across at 4.5 m/s (Tang and others, by
+// schlieren, 2013), holding that speed for six mouths' widths and then falling as one over
+// the distance, half as wide as a tenth of the distance; its front arriving at half the
+// local speed; at any place a gust of 0.35 s, rising and falling as a sine squared. The air
+// is 1.2 kg a cubic metre.
+const RHO=76.8,U0=11.25,
+  air=X=>{if(!sneeze)return null;const r=sub(X,sneeze.O),x=dot3(r,sneeze.d);if(x<=0)return null;
+    const t=(sim-sneeze.t0)/1000-(x<.3?2*x/U0:(.6+(x*x-.09)/.3)/U0);if(t<0||t>.35)return null;
+    const u=U0*min(1,.3/x)*sin(P*t/.35)**2*exp(-.693*(len(sub(r,mul(sneeze.d,x)))/max(.025,.1*x))**2);return u>.01?mul(sneeze.d,u):null};
 function step(h,a,b,I){const cs=[],W=spun(a.M,b.M,h),at=(Q,X)=>add(Q.O,toW(Q.M,X)),
     tv=p=>mul(sub(at(b,toF(a.M,sub(p,a.O))),p),1/h),
     ts=max(...Array.from({length:n},(_,k)=>len(sub(at(b,[...corner(k),.67]),at(a,[...corner(k),.67])))))/h,
     sup=k=>{const S=part(k);return u=>at(a,S(toF(a.M,u)))};
   for(const o of I){if(o.z&&o.tt&&ts>1e-9)o.z=o.q=0;
-    if(!o.z){o.v[2]-=G*h;if(o.raw)stir(o,h);o.w=inv(o,o.L);o.tt=o.fl=0}}
+    if(!o.z){o.v[2]-=G*h;if(o.raw)stir(o,h);o.w=inv(o,o.L);o.tt=o.fl=0;
+      // air moving past a body drags it: half the air's density times the body's drag
+      // coefficient and frontal area, times the speed between them squared
+      const u=air(o.x);if(u){const rv=sub(u,o.v);o.v=add(o.v,mul(rv,min(1,.5*RHO*o.cd*o.ar*len(rv)*h/o.m)))}}}
   for(const A of I){if(A.z)continue;
-    const r=(len(A.v)+len(A.w)*bound(A))*h+.002,R=bound(A)+r+ts*h,q=toF(a.M,sub(A.x,a.O)),g=ground(A);
+    const r=(len(A.v)+len(A.w)*bound(A))*h+.002,R=bound(A)+r+ts*h,q=toF(a.M,sub(A.x,a.O));
+    // a plate stands on the rim of its foot, met at sixteen points, on the top or the floor
+    if(A.k==3)for(let j=0;j<16;j++){const X=add(A.x,toW(A.M,[PW*cos(P*j/8),PW*sin(P*j/8),-PLATE.zc])),u=toF(a.M,sub(X,a.O));
+      if(onTop(u[0],u[1])&&u[2]>.5){const d=u[2]-.67,pb=at(a,[u[0],u[1],.67]);if(d<r+ts*h){A.tt=1;cs.push(meet(A,null,a.M[2],X,pb,d,tv(pb),W,"t"+A.id+"_"+j,WOOD,h))}}
+      else{const e=1e-5,z=f(X[0],X[1]),m=unit([f(X[0]-e,X[1])-f(X[0]+e,X[1]),f(X[0],X[1]-e)-f(X[0],X[1]+e),2*e]),d=(X[2]-z)*m[2];
+        if(d<r)cs.push(meet(A,null,m,X,[X[0],X[1],z],d,[0,0,0],[0,0,0],"f"+A.id+"_"+j,WOOD,h))}}
     // the floor
-    if(g.d<r)cs.push(meet(A,null,g.n,g.s,g.p,g.d,[0,0,0],[0,0,0],"f"+A.id,.6,h));
+    else{const g=ground(A);if(g.d<r)cs.push(meet(A,null,g.n,g.s,g.p,g.d,[0,0,0],[0,0,0],"f"+A.id,WOOD,h))}
     // the top and the legs
-    if(hypot(q[0],q[1])<1.12+R&&q[2]>-R&&q[2]<.67+R)for(let k=-1;k<n;k++){
+    if(hypot(q[0],q[1])<1.12+R&&q[2]>-R&&q[2]<.67+R)for(let k=A.k==3?0:-1;k<n;k++){
       if(k>=0&&(hypot(q[0]-foot(k)[0],q[1]-foot(k)[1])>.061+R||q[2]>.6+R))continue;
       let m,pa,pb,s,o;
       // an egg over the top's face meets the face at its lowest point; elsewhere, the nearest
-      if(A.k&&k<0&&(s=surf(A,mul(a.M[2],-1)),o=toF(a.M,sub(s,a.O)),onTop(o[0],o[1])&&o[2]>.66)){m=a.M[2];pa=s;pb=at(a,[o[0],o[1],.67])}
-      else if(A.k){const z=gjk(u=>core(A,u),sup(k));
-        if(z){m=unit(sub(z.a,z.b));pa=sub(z.a,mul(m,EM));pb=z.b}
+      if(A.k==1&&k<0&&(s=surf(A,mul(a.M[2],-1)),o=toF(a.M,sub(s,a.O)),onTop(o[0],o[1])&&o[2]>.66)){m=a.M[2];pa=s;pb=at(a,[o[0],o[1],.67])}
+      else if(!A.r){const z=gjk(u=>core(A,u),sup(k));
+        if(z){m=unit(sub(z.a,z.b));pa=sub(z.a,mul(m,rim(A)));pb=z.b}
         else{m=toW(a.M,unit(sub(q,nigh(k,q)[0])));pa=surf(A,mul(m,-1));pb=sup(k)(m)}}
-      else{const[p,i]=nigh(k,q),e=sub(q,p),l=len(e)||1e-12;m=toW(a.M,mul(e,(i?-1:1)/l));pb=at(a,p);pa=sub(A.x,mul(m,RAD))}
-      const d=dot3(sub(pa,pb),m);if(d<r+ts*h){A.tt=1;cs.push(meet(A,null,m,pa,pb,d,tv(pb),W,"t"+k+"_"+A.id,.6,h))}}
+      else{const[p,i]=nigh(k,q),e=sub(q,p),l=len(e)||1e-12;m=toW(a.M,mul(e,(i?-1:1)/l));pb=at(a,p);pa=sub(A.x,mul(m,A.r))}
+      const d=dot3(sub(pa,pb),m);if(d<r+ts*h){A.tt=1;cs.push(meet(A,null,m,pa,pb,d,tv(pb),W,"t"+k+"_"+A.id,WOOD,h))}}
   }
   // bodies near each other, waking any asleep: each pair begun by the one awake, or by the
   // elder of two awake
   near(I,o=>bound(o)+(o.z?0:(len(o.v)+len(o.w)*bound(o))*h)+.002,(P,Q)=>{if(P.z&&Q.z)return;
     const[A,B]=Q.z||!P.z&&P.id<Q.id?[P,Q]:[Q,P],e=sub(A.x,B.x),r=(len(A.v)+len(A.w)*bound(A))*h+.002,rB=B.z?0:(len(B.v)+len(B.w)*bound(B))*h;
     if(len(e)>bound(A)+bound(B)+r+rB)return;
+    // something on a plate meets its top, heap or china; anything else, the plate's outline
+    if((A.k==3)!=(B.k==3)){const[o,Pl]=A.k==3?[B,A]:[A,B],z=pair(o,Pl);
+      if(z.d<r+rB){if(o.z)o.z=o.q=0;if(Pl.z)Pl.z=Pl.q=0;cs.push(meet(o,Pl,z.n,z.pa,z.pb,z.d,0,0,o.id+"_"+Pl.id,z.mat,h))}return}
     let m,pa,pb;
-    if(!A.k&&!B.k){m=unit(e);pa=sub(A.x,mul(m,RAD));pb=add(B.x,mul(m,RAD))}
+    if(A.r&&B.r){m=unit(e);pa=sub(A.x,mul(m,A.r));pb=add(B.x,mul(m,B.r))}
     else{const z=gjk(u=>core(A,u),u=>core(B,u));
       if(z){m=unit(sub(z.a,z.b));pa=sub(z.a,mul(m,rim(A)));pb=add(z.b,mul(m,rim(B)))}
       else{m=unit(e);pa=surf(A,mul(m,-1));pb=surf(B,m)}}
-    const d=dot3(sub(pa,pb),m);if(d<r+rB){if(B.z)B.z=B.q=0;cs.push(meet(A,B,m,pa,pb,d,0,0,A.id+"_"+B.id,0,h))}});
-  // rounds of pushes until they agree (no contact's speed changed by 0.04 mm/s), at most ten
-  const rounds=(mode,most)=>{for(let i=0;i<most;i++){let e=0;for(const c of cs)e=max(e,push(c,mode));if(e<1e-4)break}};
+    const d=dot3(sub(pa,pb),m);if(d<r+rB){if(B.z)B.z=B.q=0;cs.push(meet(A,B,m,pa,pb,d,0,0,A.id+"_"+B.id,null,h))}});
+  // rounds of pushes until they agree (no contact's speed changed by 0.04 mm/s), at most ten;
+  // four times as many where a plate, 180 times a marble's weight, presses on lighter things
+  const much=I.some(o=>o.k==3)?4:1,rounds=(mode,most)=>{for(let i=0;i<most*much;i++){let e=0;for(const c of cs)e=max(e,push(c,mode));if(e<1e-4)break}};
   for(const c of cs)warm(c);
   rounds(0,10);
   for(const c of cs)c.dn=c.d+h*dot3(sub(add(c.A.v,crs(c.A.w,c.ra)),c.B?add(c.B.v,crs(c.B.w,c.rb)):c.V),c.n);
@@ -508,9 +589,9 @@ function step(h,a,b,I){const cs=[],W=spun(a.M,b.M,h),at=(Q,X)=>add(Q.O,toW(Q.M,X
   for(const o of I)if(!o.z)o.hm=new Map();
   for(const c of cs)c.A.hm.set(c.key,[c.keep,add(mul(c.t1,c.lt[0]),mul(c.t2,c.lt[1])),add(mul(c.t1,c.lr[0]),mul(c.t2,c.lr[1])),c.lw,h]);
   for(const c of cs){if(c.ln>0&&c.key[0]=="f")c.A.fl=1;if(!c.hit)continue;
-    const E=c.kn*c.v0*c.v0/2,two=c.A.k&&c.B&&c.B.k?2:1;
+    const E=c.kn*c.v0*c.v0/2,two=c.A.k==1&&c.B&&c.B.k==1?2:1;
     for(const[o,p]of[[c.A,add(c.A.x,c.ra)],[c.B,c.B&&add(c.B.x,c.rb)]])
-      if(o&&o.k&&E>two*o.m*G*.025){crack(o,p);if(o.raw&&E>two*o.m*G*.51)o.broke=1}}
+      if(o&&o.k==1&&E>two*o.m*G*.025){crack(o,p);if(o.raw&&E>two*o.m*G*.51)o.broke=1}}
   for(const o of I){if(o.z)continue;
     if(!o.off){const q=toF(b.M,sub(o.x,b.O));if(o.fl||!onTop(q[0],q[1]))o.off=1}
     o.q=len(o.v)<.003&&len(o.w)*bound(o)<.003&&(!o.raw||len(invC(o,o.H))*bound(o)<.003)?o.q+h:0;
@@ -525,6 +606,12 @@ function near(L,m,fn){const S=L.slice().sort((a,b)=>a.x[0]-b.x[0]),w=2*max(0,...
 function advance(a,b){const h=STEP/1000,c=k=>[...corner(k),.67],N=balls.length,
     rim=max(...Array.from({length:n},(_,k)=>len(sub(add(b.O,toW(b.M,c(k))),add(a.O,toW(a.M,c(k)))))))/h,
     sp=o=>o.z?0:len(o.v)+len(o.w)*bound(o),up=new Map(balls.map(o=>[o,o])),root=o=>up.get(o)==o?o:(up.set(o,root(up.get(o))),up.get(o)),isl=new Map();
+  // somebody sneezes, at a plate of spaghetti whose time has come: uphill of the meatball,
+  // 30 cm off and 30 cm up, at it; the gust wakes whatever it reaches
+  for(const o of balls)if(o.k==3&&o.at&&sim>=o.at){o.at=0;const X=balls.includes(o.ball)?o.ball.x:o.x,w=toW(o.M,o.down),
+      d=unit([w[0],w[1],0]),O=add(sub(X,mul(d,.75)),[0,0,.75]);sneeze={t0:sim,O,d:unit(sub(X,O))}}
+  if(sneeze&&sim-sneeze.t0>3000)sneeze=null;
+  if(sneeze)for(const o of balls)if(o.z&&air(o.x))o.z=o.q=0;
   near(balls,o=>bound(o)+sp(o)*h+.002,(A,B)=>{if(!(A.z&&B.z)&&len(sub(A.x,B.x))<bound(A)+bound(B)+(sp(A)+sp(B))*h+.004)up.set(root(A),root(B))});
   for(const o of balls){const r=root(o);isl.has(r)?isl.get(r).push(o):isl.set(r,[o])}
   for(const I of isl.values()){const near=I.some(o=>hypot(o.x[0],o.x[1])<1.3);
@@ -532,27 +619,56 @@ function advance(a,b){const h=STEP/1000,c=k=>[...corner(k),.67],N=balls.length,
     const m=min(24,max(1,-fl(-(max(...I.map(sp))+(near?rim:0))*h/.002)));
     let q=a;for(let i=1;i<=m;i++){const t=i/m,r=i==m?b:pose(a.plane.map((z,j)=>z+(b.plane[j]-z)*t),a.t+(b.t-a.t)*t);step(h/m,q,r,I);q=r}}
   for(const o of balls)if(o.broke)spill(o);
-  const kept=balls.filter(o=>!o.broke);balls=kept.filter(o=>abs(o.x[0])<=1.6&&abs(o.x[1])<=1.6&&o.x[2]>-1);gone+=kept.length-balls.length}
+  // what leaves the map is gone; a meatball, out the door
+  const kept=balls.filter(o=>!o.broke),inside=o=>abs(o.x[0])<=1.6&&abs(o.x[1])<=1.6&&o.x[2]>-1;
+  for(const o of kept)if(!inside(o))o.k==2?door++:gone++;balls=kept.filter(inside)}
 
+// A new body of kind k, at rest: its mass and moments; its bounce, friction, rolling and
+// twist levers (a meatball soft: it hardly bounces, grips, and holds still on any slope under
+// 3 in 100, an estimate); and its drag in moving air, coefficient and frontal area.
+function make(k,raw){const s=[RAD,0,MR,0][k],m=[MM,EGG.m,MB,PLATE.m][k];
+  return{id:ids++,k,raw,r:s,v:[0,0,0],L:[0,0,0],H:[0,0,0],w:[0,0,0],m,I:s?[.4*m*s*s,.4*m*s*s,.4*m*s*s]:k==1?raw?EGG.shell:EGG.boiled:PLATE.I,
+    C:raw?EGG.core:0,e:[.9,.3,.1,.5][k],mu:[.4,.4,.6,.35][k],rr:[RR,RR,.0015,RR][k],tw:[.00005,.0007,.007,.00005][k],
+    cd:[.47,.4,.47,1.1][k],ar:[P*RAD*RAD,P*.055*.071,P*MR*MR,2*PR*PH][k],off:0,z:0,q:0,paint:k==1?PAINT:[],cracks:[],M:I3.map(e=>e.slice())}}
 // Something laid at rest, just touching what it is laid on -- the floor at (x,y), or the
-// top at (u,v) of its own frame: a marble, or one time in thirty an egg on its side,
-// turned anyhow. Some eggs are boiled and some are not, and how the universe lays them so
-// remains a mystery.
-function lay(x0,y0,top){if(!tp)return;const k=+(random()<1/30),raw=k&&random()<.5,
-    b={id:ids++,k,raw,v:[0,0,0],L:[0,0,0],H:[0,0,0],w:[0,0,0],m:k?EGG.m:MM,I:k?raw?EGG.shell:EGG.boiled:0,C:raw?EGG.core:0,
-      e:k?.3:.9,tw:k?.0007:.00005,off:!top,z:0,q:0,paint:k?PAINT:[],cracks:[]},
-    u=top?tp.M[2]:[0,0,1],a=random()*2*P,ax=top?add(mul(tp.M[0],cos(a)),mul(tp.M[1],sin(a))):[cos(a),sin(a),0],
-    e0=rot(u,ax,random()*2*P),S=top?add(tp.O,toW(tp.M,[x0,y0,.67])):[x0,y0,f(x0,y0)];
-  b.M=[e0,crs(ax,e0),ax];
+// top at (u,v) of its own frame: a marble; one time in thirty an egg on its side, turned
+// anyhow; one time in sixty a plate of spaghetti, all covered with cheese, its meatball on
+// top. Some eggs are boiled and some are not, and how the universe lays them so remains a
+// mystery.
+function lay(x0,y0,top){if(!tp)return;const c=random(),k=c<1/60?3:c<1/60+1/30?1:0,raw=k==1&&random()<.5,b=make(k,raw),
+    u=top?tp.M[2]:[0,0,1],a=random()*2*P,ax=top?add(mul(tp.M[0],cos(a)),mul(tp.M[1],sin(a))):[cos(a),sin(a),0],e0=rot(u,ax,random()*2*P);
+  b.off=!top;b.M=k==3?[ax,crs(u,ax),u]:[e0,crs(ax,e0),ax];
   // set down at (p,q), just touching what it is laid on; and is it clear of everything?
-  const put=(p,q)=>{const S=top?add(tp.O,toW(tp.M,[p,q,.67])):[p,q,f(p,q)];b.x=add(S,mul(u,.1));
+  const put=(p,q)=>{const S=top?add(tp.O,toW(tp.M,[p,q,.67])):[p,q,f(p,q)];b.x=add(S,mul(u,.2));
       if(top)b.x=add(b.x,mul(u,dot3(sub(S,surf(b,mul(u,-1))),u)));else for(let i=0;i<3;i++){const g=ground(b);b.x=sub(b.x,mul(g.n,g.d))}},
-    clear=()=>balls.every(o=>{if(len(sub(b.x,o.x))>bound(b)+bound(o)+.001)return 1;
-      if(!b.k&&!o.k)return len(sub(b.x,o.x))-2*RAD>.0004;const z=gjk(v=>core(b,v),v=>core(o,v));return z&&z.d-rim(b)-rim(o)>.0004});
+    // clear of every body, and on the floor of the table's legs and top
+    clear=()=>(top?[]:Array.from({length:n+1},(_,k)=>k-1)).every(k=>{const S=part(k),z=gjk(v=>core(b,v),v=>add(tp.O,toW(tp.M,S(toF(tp.M,v)))));return z&&z.d-rim(b)>.0004})&&
+      balls.every(o=>{if(len(sub(b.x,o.x))>bound(b)+bound(o)+.001)return 1;if(b.k==3&&o.k==3)return 0;
+      if(b.k==3||o.k==3){const[q,Pl]=b.k==3?[o,b]:[b,o],t=toF(Pl.M,sub(q.x,Pl.x)),r=hypot(t[0],t[1]);
+        // and not under a plate's rim
+        return pair(q,Pl).d>.0004&&!(r<PR+bound(q)&&t[2]+PLATE.zc<dish(min(r,PR)))}
+      if(b.r&&o.r)return len(sub(b.x,o.x))-b.r-o.r>.0004;const z=gjk(v=>core(b,v),v=>core(o,v));return z&&z.d-rim(b)-rim(o)>.0004});
   // where something already lies, beside it: the nearest clear place, on rings 1.6 mm apart
   out:for(let i=0;i<80;i++)for(let j=0,J=max(1,6*i);j<J;j++){const a=2*P*j/J,p=x0+.004*i*cos(a),q=y0+.004*i*sin(a);
     if(top&&!onTop(p,q))continue;put(p,q);if(clear())break out}
-  balls.push(b);wake()}
+  balls.push(b);if(k==3)perch(b);wake()}
+// The meatball set on the heap just so: along the line down the heap the way the plate
+// leans, at the furthest point where it still holds -- where the slope it feels is 97 in
+// 100 of what its rolling resistance can hold. Its plate is dressed: strands of spaghetti
+// over the heap, sauce on top, cheese on that. In two and a half to five seconds, uphill of
+// it, somebody sneezes.
+function perch(Pl){const mb=make(2,0),g=toF(Pl.M,[0,0,1]),l=hypot(g[0],g[1]),a=random()*2*P,d=l>1e-6?[-g[0]/l,-g[1]/l]:[cos(a),sin(a)],
+    N=s=>{const q=-heapD(abs(s))*(s<0?-1:1);return unit([q*d[0],q*d[1],1])},tilt=s=>{const c=dot3(N(s),g);return sqrt(max(0,1-c*c))/c},hold=.99*mb.rr/MR;
+  let s=-.6*RE;for(let i=0;i<=400;i++){const t=-.6*RE+1.2*RE*i/400;if(tilt(t)<=hold)s=t}
+  let lo=s,hi=s+1.2*RE/400;for(let i=0;i<50;i++){const m=(lo+hi)/2;tilt(m)<=hold?lo=m:hi=m}s=lo;
+  mb.x=add(Pl.x,toW(Pl.M,add([s*d[0],s*d[1],heap(abs(s))-PLATE.zc],mul(N(s),MR))));mb.M=Pl.M.map(e=>e.slice());mb.off=Pl.off;
+  Pl.ball=mb;Pl.down=[d[0],d[1],0];Pl.at=sim+2500+2500*random();balls.push(mb);
+  const on=(r,t,h)=>[r*cos(t),r*sin(t),pile(r)-PLATE.zc+h];
+  Pl.strands=Array.from({length:22},()=>{const r0=.03+random()*.18,t0=random()*2*P,j=2+fl(random()*4),w=random()*7,A=.01+random()*.02;
+    return Array.from({length:31},(_,i)=>{const t=t0+2.2*i/30;return on(max(.005,min(RE-.01,r0+A*sin(j*t+w))),t,.002)})});
+  const c0=[rnd(.02),rnd(.02)],R0=.07+random()*.02;
+  Pl.sauce=Array.from({length:28},(_,i)=>{const t=P*i/14,r=R0*(1+.15*sin(3*t+a)+.08*sin(5*t)),x=c0[0]+r*cos(t),y=c0[1]+r*sin(t),q=hypot(x,y);return[x,y,pile(q)-PLATE.zc+.003]});
+  Pl.cheese=Array.from({length:40},()=>{const t=random()*2*P,r=sqrt(random())*.11,x=c0[0]+r*cos(t),y=c0[1]+r*sin(t);return[x,y,pile(hypot(x,y))-PLATE.zc+.004]})}
 // a click on the plan: on the top if the top is there, else on the floor
 function drop(u,v){if(!tp)return;const q=toF(tp.M,sub([u,v,topZ([u,v])],tp.O));
   if(onTop(q[0],q[1]))lay(q[0],q[1],1);else if(abs(u)<=1.6&&abs(v)<=1.6)lay(u,v,0)}
@@ -577,6 +693,7 @@ const pw=(q,dx,dy)=>q.on?add(tp.O,toW(tp.M,[q.c[0]+dx,q.c[1]+dy,.67])):[q.c[0]+d
 // paint and cracks. Each is one glaze on the table and another off it; the paint is the
 // family's third.
 function body(b,d,pt,r){if(!b.k){const c=pt(b.x);dot(c[0],c[1],r,b);return}
+  if(b.k==2)return ball(b,d,pt);if(b.k==3)return platter(b,d,pt);
   const a1=unit(crs(d,abs(d[2])<.9?[0,0,1]:[1,0,0])),a2=crs(d,a1),out=[];
   for(let i=0;i<36;i++){const t=P*i/18;out.push(pt(surf(b,add(mul(a1,cos(t)),mul(a2,sin(t))))))}
   x.beginPath();trace(x,out);x.closePath();x.fillStyle=C(b.off?"crimson-base":"jun-base");x.fill();
@@ -586,6 +703,40 @@ function body(b,d,pt,r){if(!b.k){const c=pt(b.x);dot(c[0],c[1],r,b);return}
       const p=pt(add(b.x,toW(b.M,l[i-1][0]))),q=pt(add(b.x,toW(b.M,l[i][0])));x.moveTo(p[0],p[1]);x.lineTo(q[0],q[1])}
     x.strokeStyle=C(c);x.lineWidth=w;x.stroke()}
   x.restore();x.beginPath();trace(x,out);x.closePath();x.lineWidth=1;x.strokeStyle=C("ink");x.stroke()}
+// a meatball: browned, flecked, and the flecks turn with it
+const FLECK=Array.from({length:18},(_,i)=>{const z=1-2*(i+.5)/18,r=sqrt(1-z*z),t=i*2.39996;return[r*cos(t),r*sin(t),z]});
+function ball(b,d,pt){const c=pt(b.x),a1=unit(crs(d,abs(d[2])<.9?[0,0,1]:[1,0,0])),e=pt(add(b.x,mul(a1,MR))),R=hypot(e[0]-c[0],e[1]-c[1]);
+  x.beginPath();x.arc(c[0],c[1],R,0,7);x.fillStyle=C("rust-base");x.fill();x.lineWidth=1;x.strokeStyle=C("ink");x.stroke();
+  x.fillStyle=C("ink");for(const v of FLECK){const w=toW(b.M,v);if(dot3(w,d)<-.25){const p=pt(add(b.x,mul(w,MR*.8)));x.fillRect(p[0]-.8,p[1]-.8,1.6,1.6)}}}
+// A plate of spaghetti as the eye along d sees it: the china; the heap, where it shows (from
+// the side the near rim hides its foot); its strands where they face the eye; the sauce and
+// the cheese on top. The heap meets the dish at RE.
+function platter(b,d,pt){const W_=v=>add(b.x,toW(b.M,v)),dl=toF(b.M,d),above=dl[2]<-.5,
+    a1=unit(crs(d,abs(d[2])<.9?[0,0,1]:[1,0,0])),a2=crs(d,a1),ring=(r,z,k)=>Array.from({length:k},(_,i)=>pt(W_([r*cos(2*P*i/k),r*sin(2*P*i/k),z-PLATE.zc]))),
+    // the china's and the heap's outlines from the side: their points furthest each way across the eye
+    out=F=>Array.from({length:48},(_,i)=>{const t=2*P*i/48,u=toF(b.M,add(mul(a1,cos(t)),mul(a2,sin(t)))),s=hypot(u[0],u[1]),c=[u[0]/(s||1),u[1]/(s||1)],q=F(s,u[2]);
+      return q&&pt(W_([c[0]*q[0],c[1]*q[0],q[1]-PLATE.zc]))}).filter(Boolean),
+    china=(s,z)=>[[PW,0],[PR,PH]].reduce((p,q)=>s*q[0]+z*q[1]>s*p[0]+z*p[1]?q:p),
+    dome=(s,z)=>z>0&&crown(s,z),
+    lines=(L,c,w)=>{x.beginPath();for(const l of L)for(let i=1;i<l.length;i++){const A=l[i-1],B=l[i],q=hypot(A[0],A[1]),
+        n=toW(b.M,unit([-pileD(q)*A[0]/(q||1),-pileD(q)*A[1]/(q||1),1]));if(dot3(n,d)<0){const p=pt(W_(A)),r=pt(W_(B));x.moveTo(p[0],p[1]);x.lineTo(r[0],r[1])}}
+      x.strokeStyle=C(c);x.lineWidth=w;x.stroke()};
+  x.save();x.lineJoin="round";
+  if(above){x.beginPath();trace(x,ring(PR,PH,48));x.closePath();x.fillStyle=C("paper");x.fill();x.lineWidth=1;x.strokeStyle=C("rule");x.stroke();
+    x.beginPath();trace(x,ring(PW,PT,40));x.closePath();x.lineWidth=.7;x.stroke();
+    x.beginPath();trace(x,ring(RE,pile(RE),40));x.closePath();x.fillStyle=C("gold-wash");x.fill();x.strokeStyle=C("gold-base");x.lineWidth=.8;x.stroke()}
+  else{const ch=out(china);x.beginPath();trace(x,ch);x.closePath();x.fillStyle=C("paper");x.fill();x.lineWidth=1;x.strokeStyle=C("rule");x.stroke();
+    // the near rim's lip, across the eye: the heap shows above it
+    const L=pt(W_(add(mul(toF(b.M,a1),-PR),[0,0,PH-PLATE.zc]))),R=pt(W_(add(mul(toF(b.M,a1),PR),[0,0,PH-PLATE.zc]))),k=1e4;
+    const t=unit([R[0]-L[0],R[1]-L[1],0]),nv=t[0]>0?[t[1],-t[0]]:[-t[1],t[0]];
+    x.beginPath();x.moveTo(L[0]-t[0]*k,L[1]-t[1]*k);x.lineTo(R[0]+t[0]*k,R[1]+t[1]*k);
+    x.lineTo(R[0]+t[0]*k+nv[0]*k,R[1]+t[1]*k+nv[1]*k);x.lineTo(L[0]-t[0]*k+nv[0]*k,L[1]-t[1]*k+nv[1]*k);x.closePath();x.clip();
+    const hp=out(dome);x.beginPath();trace(x,hp);x.closePath();x.fillStyle=C("gold-wash");x.fill();x.strokeStyle=C("gold-base");x.lineWidth=.8;x.stroke()}
+  lines(b.strands,"gold-base",.7);
+  x.beginPath();trace(x,b.sauce.map(v=>pt(W_(v))));x.closePath();x.fillStyle=C("rust-accent");x.globalAlpha=.85;x.fill();x.globalAlpha=1;
+  x.fillStyle=C("paper");for(const v of b.cheese){const q=hypot(v[0],v[1]),n=toW(b.M,unit([-pileD(q)*v[0]/(q||1),-pileD(q)*v[1]/(q||1),1]));
+    if(dot3(n,d)<0){const p=pt(W_(v));x.fillRect(p[0]-.9,p[1]-.9,1.8,1.8)}}
+  x.restore()}
 // a marble
 function dot(X,Y,r,b){x.beginPath();x.arc(X,Y,r,0,7);x.fillStyle=C(b.off?"crimson-base":"jun-base");x.fill();x.lineWidth=1;x.strokeStyle=C("ink");x.stroke()}
 // a pool from above: the white, the yolk, the bits of shell
@@ -622,7 +773,8 @@ function draw(wall){
     up=gap.filter(v=>v>.004).length,s=W/3.2,o=W/2,K=1.12*s,top=new Path2D(),T=tone(plane),
     ea=[-sin(th),cos(th)],eb=[cos(th),sin(th)],pl=X=>[o+X[0]*s,o-X[1]*s],at=X=>pl(add(tp.O,toW(tp.M,X))),gc=at([0,0,.67]),
     // from above, bodies below the top's height go under it, the rest over it
-    things=over=>{for(const d of balls){const L=surf(d,[0,0,-1]);if(L[2]>topZ(L)-.003==over)body(d,[0,0,-1],pl,max(2.5,RAD*s))}};
+    // and lower things first, so what lies on a plate is drawn over it
+    things=over=>{for(const d of balls.slice().sort((p,q)=>p.x[2]-q.x[2])){const L=surf(d,[0,0,-1]);if(L[2]>topZ(L)-.003==over)body(d,[0,0,-1],pl,max(2.5,(d.r||0)*s))}};
   x.setTransform(dpr,0,0,dpr,0,0);x.clearRect(0,0,CW,CH);x.drawImage(map,0,0,W,W);
   for(const q of pools)if(!q.on)pond(q,pl,s);
   things(false);
@@ -652,18 +804,22 @@ function draw(wall){
   else{elevation(p,plane,ea,0,W*1.4,E,"a");elevation(p,plane,eb,E+24,W*1.4,E,"b")}
   const on=balls.filter(d=>!d.off),still=balls.filter(d=>d.off&&d.z).length,loose=balls.length-on.length-still,
     cracked=balls.filter(d=>d.cracks.length).length,broke=pools.length,
-    tally=l=>{const e=l.filter(d=>d.k).length,m=l.length-e;return[m&&m+(m>1?" marbles":" marble"),e&&e+(e>1?" eggs":" egg")].filter(Boolean).join(" and ")},
+    names=[["marble","marbles"],["egg","eggs"],["meatball","meatballs"],["plate of spaghetti","plates of spaghetti"]],
+    tally=l=>{const w=names.map((nm,k)=>{const c=l.filter(d=>d.k==k).length;return c&&c+" "+nm[c>1?1:0]}).filter(Boolean);
+      return w.length>1?w.slice(0,-1).join(", ")+" and "+w[w.length-1]:w[0]},
     state=(!up?"It is still.":R.length>1&&b!==a?"It rocks.":up===1?"One foot is in the air.":up+" feet are in the air.")+
+      (sneeze&&sim-sneeze.t0<2500?" Somebody sneezed.":"")+
       (on.length?" "+tally(on)+(on.length>1?" are":" is")+" on the table.":"")+(loose?" "+loose+" rolling on the floor.":"")+
       (still?" "+still+(still>1?" rest":" rests")+" in a hollow.":"")+(gone?" "+gone+" rolled away.":"")+
+      (door?" "+door+(door>1?" meatballs":" meatball")+" rolled out the door.":"")+
       (broke?" "+broke+(broke>1?" eggs broke.":" egg broke."):"")+(cracked?" "+cracked+(cracked>1?" eggs are cracked.":" egg is cracked."):"");
   if(state!==said)$("s").textContent=said=state;
   // a change of theme: the drawing as it was, laid over the new one and let go
   if(old){const k=(wall-t0)/500;if(k>=1||old.width!=c.width||old.height!=c.height)old=null;
     else{x.setTransform(1,0,0,1,0,0);x.globalAlpha=1-ease(k);x.drawImage(old,0,0);x.globalAlpha=1}}
-  // when nothing moves -- no lean, no turn, nothing awake, no spreading, no fade -- the page
-  // rests, and draws nothing, until something wakes it
-  if(drag!==null||abs(to-th)>1e-4||R.length>1&&!calm||old||balls.some(d=>!d.z)||pools.some(q=>sim-q.t0<1500))requestAnimationFrame(draw);
+  // when nothing moves -- no lean, no turn, nothing awake, no sneeze to come or going, no
+  // spreading, no fade -- the page rests, and draws nothing, until something wakes it
+  if(drag!==null||abs(to-th)>1e-4||R.length>1&&!calm||old||balls.some(d=>!d.z||d.at)||sneeze||pools.some(q=>sim-q.t0<1500))requestAnimationFrame(draw);
   else asleep=true}
 function wake(){if(asleep){asleep=false;requestAnimationFrame(draw)}}
 // the curve the page's own colours fade along, CSS's "ease": cubic-bezier(.25,.1,.25,1)
