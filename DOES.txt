@@ -58,8 +58,14 @@ What itsthefloor.fyi does. A golf pass must keep every line true.
     or "N feet are in the air.", then, for a moment after one, "Somebody
     sneezed.", then what is on the table ("2 marbles, 1 meatball and 1 plate of
     spaghetti are on the table."), how many roll on the floor, rest in a hollow,
-    rolled away, rolled out the door (meatballs), broke, and are cracked.
- 9. The label gives the page's own size, read live, and one line: "Turn it." The
+    went down the hole, rolled away, rolled out the door (meatballs), broke, and
+    are cracked.
+ 9. The label's second line says what is here: "a table, a floor, a hole", then
+    whatever else is ("7 marbles and an egg", "a plate of spaghetti", "a broken
+    egg"), as it comes and goes. Once anything has gone down the hole or a meatball
+    out the door, a line under "Turn it." counts it ("3 in the hole. 1 meatball out
+    the door."); the counts are kept for the visit, through another floor. The
+    label gives the page's own size, read live, and one line: "Turn it." The
     title (the tab, and any preview of a link) is "It's not your table that's
     wobbly." The console gives the Greek
     word for table, and what it means.
@@ -77,7 +83,8 @@ What itsthefloor.fyi does. A golf pass must keep every line true.
     just touching what it is laid on: over a plate, on its spaghetti or its china,
     come down onto from above to where it first touches; where something else
     already lies, at the nearest clear place beside it, never under a plate's rim,
-    and on the floor clear of the legs and the top. One time in thirty it is an egg (item 16);
+    and on the floor clear of the legs, the top and the hole (what goes down it
+    must roll there). One time in thirty it is an egg (item 16);
     one time in sixty, a plate of spaghetti (item 17).
 12. One world moves them all: rigid bodies in their true shapes under gravity,
     and, wherever two things touch (two bodies, a body and the floor, the top or
@@ -176,8 +183,22 @@ What itsthefloor.fyi does. A golf pass must keep every line true.
     edge -- what lies on the top is hidden by it. The room goes on past the plan's
     square, and far things fade into the paper, from 80 cm off to 1.6 m, so its
     edge is never seen; a body nearing the plan's edge, where it leaves the world,
-    fades away over its last 5 cm. Far things are drawn before near ones, so a hill
+    fades away over its last 5 cm. The hole is dark, as the plan has it, and what
+    is down it is seen through it. Far things are drawn before near ones, so a hill
     hides what is behind it, and each body after the floor it stands on. Dragging
     sideways turns the table; a click lays a marble where the eye's ray meets the floor,
     or, meeting the underside, on the top above that point. Without script there is no
     button.
+19. A hole in the floor: a golf cup, 10.8 cm across and 10.2 cm deep, its bottom
+    level, its wall straight down from the floor's edge round it. Each floor has its
+    own, chosen with it: somewhere on a slope of at least 3 in 100, so never in a
+    hollow, beyond where the legs can stand, inside the plan. It is a hole and not a
+    mark: the floor is not there, and its edge is met where it is nearest. A marble
+    whose touch crosses onto it is turned in by the edge and drops (40 mm off its
+    middle, turned 44 degrees; 52 mm off, 66); one whose touch stays on the floor
+    goes by; rolling straight at it, one at 1.2 m/s drops in and one at 2.4 m/s hops
+    it. The wall and the bottom hold what is down it, and it can fill. Marbles, eggs and meatballs fit; a plate rests across it on its foot.
+    White flowing to its edge pours in and is gone. In the plan it is dark, with
+    what is in it seen from above; in the elevations it has its own section, cut
+    straight down to its bottom, dark, with what is in it; from a leg, item 18.
+    Whatever has gone all the way below the floor there is counted, once (item 9).

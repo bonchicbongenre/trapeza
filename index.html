@@ -48,10 +48,11 @@ a{color:var(--amber-accent);text-underline-offset:.15em}
 <p class="sr" id="s" aria-live="polite"></p>
 <div class="label">
 <p class="t">itsthefloor.fyi</p>
-<p class="m">a table, a floor</p>
+<p class="m" id="what">a table, a floor</p>
 <p>2026</p>
 <p class="d"><span id="self">&ndash;</span> bytes</p>
 <p class="l">Turn it.</p>
+<p id="tally" hidden></p>
 </div>
 </main>
 <p class="by">by <a href="https://github.com/bonchicbongenre/trapeza">bonchicbongenre</a></p>
@@ -61,7 +62,7 @@ const{PI:P,sin,cos,abs,hypot,min,max,round,exp,sqrt,pow,atan2,random}=Math,fl=Ma
   $=i=>document.getElementById(i),c=$("c"),x=c.getContext("2d"),col={},C=k=>col["--"+k],
   calm=matchMedia("(prefers-reduced-motion: reduce)").matches;
 let n=4,th=0,to=0,drag=null,press=null,f,W,E,CW,CH,wide,dpr,map,said,balls=[],gone=0,old,t0,lv=[0,1],
-  sim=null,asleep=false,tp=null;
+  sim=null,asleep=false,tp=null,hole=null,holed=0,saidWhat,saidScore="";
 // the world's step, in milliseconds of the page's clock
 const STEP=1000/240;
 
@@ -79,7 +80,15 @@ const rnd=a=>(random()*2-1)*a,floor=g=>Object.assign((u,v)=>g(u,v)[0],{g}),
       return floor((u,v)=>{const p=u-u0,q=v-v0,e=a*exp(-(p*p+q*q)/1.6),r=g(u,v);return[e+r[0],r[1]-e*p/.8,r[2]-e*q/.8]})},
     ()=>{const a=rnd(.05),b=rnd(.05),g=gauss(3,.03,[.3,.4]);
       return floor((u,v)=>{const r=g(u,v);return[a*u*v+b*(u*u-v*v)+r[0],a*v+2*b*u+r[1],a*u-2*b*v+r[2]]})}],
-  another=()=>{f=kinds[fl(random()*kinds.length)]();if(W)paint();carry();wake()},
+  another=()=>{f=kinds[fl(random()*kinds.length)]();hole=dig();if(W)paint();carry();wake()},
+  // A hole in the floor: a golf cup, 10.8 cm across and 10.2 cm deep, its bottom level, its
+  // wall straight down from the floor's edge round it; somewhere on a slope (of at least 3 in
+  // 100, so it is never in a hollow), beyond where the legs can stand and inside the plan.
+  // Each floor has its own.
+  HR=.135,HD=.254,
+  dig=()=>{let best=null;for(let i=0;i<300;i++){const a=random()*2*P,r=1.18+random()*.3,c=[r*cos(a),r*sin(a)];
+      if(abs(c[0])>1.6-HR-.02||abs(c[1])>1.6-HR-.02)continue;const g=f.g(c[0],c[1]),s=hypot(g[1],g[2]);
+      if(!best||s>best.s)best={c,b:g[0]-HD,s};if(s>=.03)break}return best},
   feet=a=>Array.from({length:n},(_,k)=>{const q=a+P/2+2*P*k/n;return[cos(q),sin(q)]}),
   trace=(t,pts)=>pts.forEach((q,i)=>t[i?"lineTo":"moveTo"](q[0],q[1]));
 
@@ -124,6 +133,9 @@ function colours(){const cs=getComputedStyle(document.documentElement),bs=getCom
     const v=rgb(day(k||t));if(/\d/.test(v)){col["--"+t]=v;col["--"+t+"#"]=v.match(/\d+/g).map(Number)}else if(k){col["--"+t]=col["--"+k];col["--"+t+"#"]=col["--"+k+"#"]}}
   col.font="12px "+cs.getPropertyValue("--typewriter")}
 
+// The hole's dark, in every view: ink, three parts to one of the wash of its height.
+const pitOf=()=>{const z=f(hole.c[0],hole.c[1]),bk=C(["qingbai-wash#","ru-wash#","longquan-wash#"][max(0,min(2,fl(3*(z-lv[0])/(lv[1]-lv[0]+1e-9))))]),ik=C("ink#");
+  return bk.map((v,i)=>round((v+3*ik[i])/4))};
 // The plan's floor: three washes, low to high, each a third of its heights, and ink
 // contours. The elevations keep the same thirds (lv), so a colour is a height in both.
 function paint(){const N=min(round(W*dpr),900),o=document.createElement("canvas"),hs=new Float32Array(N*N);let lo=1,hi=-1;
@@ -131,8 +143,10 @@ function paint(){const N=min(round(W*dpr),900),o=document.createElement("canvas"
   lv=[lo,hi];
   o.width=o.height=N;const g=o.getContext("2d"),img=g.createImageData(N,N),d=img.data,
     band=[C("qingbai-wash#"),C("ru-wash#"),C("longquan-wash#")],ink=C("ink#");
-  for(let k=0;k<N*N;k++){const v=hs[k],b=band[max(0,min(2,fl(3*(v-lo)/(hi-lo+1e-9))))],e=v/.012,on=abs(e-round(e))<.07;
-    for(let z=0;z<3;z++)d[4*k+z]=on?(b[z]*3+ink[z])/4:b[z];d[4*k+3]=255}
+  // and the hole, dark
+  const inh=k=>hole&&hypot((2*(k%N)/N-1)*1.6-hole.c[0],(1-2*fl(k/N)/N)*1.6-hole.c[1])<HR,pt_=hole&&pitOf();
+  for(let k=0;k<N*N;k++){const v=hs[k],b=band[max(0,min(2,fl(3*(v-lo)/(hi-lo+1e-9))))],e=v/.012,on=abs(e-round(e))<.07,dk=inh(k);
+    for(let z=0;z<3;z++)d[4*k+z]=dk?pt_[z]:on?(b[z]*3+ink[z])/4:b[z];d[4*k+3]=255}
   g.putImageData(img,0,0);map=o}
 
 // The drawing is seen whole on the first screen. Wide: the two elevations stacked
@@ -180,12 +194,20 @@ function elevation(p,plane,e,X,Y,w,tag){const s=w/2.8,cx=X+w/2,leg=.6*s,lw=.085*
     up=(r,h)=>[px(r)-h*ke/nn,y(r)-h/nn],
     deep=r=>r[0]*d[0]+r[1]*d[1],rad=max(2,RAD*s),
     // the floor, drawn, at t across the view and z deep
-    gy=(t,z)=>Y-f(t*e[0]+z*d[0],t*e[1]+z*d[1])*2*s,
+    gy=(t,z)=>Y-f(t*e[0]+z*d[0],t*e[1]+z*d[1])*2*s,pit=hole&&"rgb("+pitOf()+")",
     // a section of the floor z deep, from a to b across the view: its ground filled down to
     // the panel's foot in the plan's thirds, each at its heights, and its ridge in ink, which
     // lives inside its own ground, so none of it shows past the green
-    cut=(a,b,z,iw)=>{const m=max(8,round((b-a)*20)),pts=[],g=new Path2D();
-      for(let i=0;i<=m;i++){const t=a+(b-a)*i/m;pts.push([cx+t*s,gy(t,z)])}
+    // (where it crosses the hole, straight down to the hole's bottom, drawn at its true depth
+    // under the drawn floor, as what rests on it is, and straight up again; the cut dark, the
+    // hole's far wall seen through it, as the plan has the hole)
+    cut=(a,b,z,iw)=>{const m=max(8,round((b-a)*20)),ts=[],pts=[],nt=[],g=new Path2D();let ch=null;for(let i=0;i<=m;i++)ts.push(a+(b-a)*i/m);
+      if(hole){const c=hole.c,w2=HR*HR-(z-(c[0]*d[0]+c[1]*d[1]))**2,ct=c[0]*e[0]+c[1]*e[1];if(w2>0){ch=[ct-sqrt(w2),ct+sqrt(w2)];ts.push(...ch.filter(t=>t>a&&t<b));ts.sort((p,q)=>p-q)}}
+      for(const t of ts){const X=[t*e[0]+z*d[0],t*e[1]+z*d[1]],y0=gy(t,z),yb=ch?y0+(f(X[0],X[1])-hole.b)*s:y0;
+        if(ch&&t==ch[0]){pts.push([cx+t*s,y0],[cx+t*s,yb]);nt.push([cx+t*s,y0],[cx+t*s,yb])}
+        else if(ch&&t==ch[1]){pts.push([cx+t*s,yb],[cx+t*s,y0]);nt.push([cx+t*s,yb],[cx+t*s,y0])}
+        else if(ch&&t>ch[0]&&t<ch[1]){pts.push([cx+t*s,yb]);nt.push([cx+t*s,yb])}else pts.push([cx+t*s,y0])}
+      if(nt.length>3){x.beginPath();trace(x,nt);x.closePath();x.fillStyle=pit;x.fill()}
       g.moveTo(cx+a*s,Y+.12*w);for(const q of pts)g.lineTo(q[0],q[1]);g.lineTo(cx+b*s,Y+.12*w);g.closePath();
       x.fillStyle=C("qingbai-wash");x.fill(g);x.save();x.clip(g);
       for(const j of[1,2]){const yk=Y-(lv[0]+(lv[1]-lv[0])*j/3)*2*s;x.fillStyle=C(j<2?"ru-wash":"longquan-wash");x.fillRect(X,Y-.6*w,w,max(0,yk-Y+.6*w))}
@@ -226,11 +248,12 @@ function elevation(p,plane,e,X,Y,w,tag){const s=w/2.8,cx=X+w/2,leg=.6*s,lw=.085*
       x.fillStyle=C("amber-wash");x.fill();x.lineWidth=1.1;x.strokeStyle=C("amber-base");x.stroke();
       if(!rise&&!flush&&dz>.3){x.beginPath();for(let i=0;i<24;i++)x.lineTo(...end(P*i/12));x.closePath();x.fillStyle=mix(.6);x.fill();x.stroke()}};
   slab();
-  // the feet, the bodies and the pools in shot, back to front; what lies on a plate, just
-  // after its plate
+  // the feet, the hole, the bodies and the pools in shot, back to front; what lies on a
+  // plate, just after its plate; what is down the hole, just after the hole's own section
   const lies=b=>{if(!b.R&&b.k!=3)for(const o of balls)if(o.k==3){const t=toF(o.M,sub(b.x,o.x));if(hypot(t[0],t[1])<PR&&t[2]>0)return o}},
-    key=([r,b])=>{const o=b&&lies(b);return o?deep(o.x)-.001:deep(r)};
-  for(const[r,b]of[...p.map(r=>[r]),...[...balls.map(b=>[b.x,b]),...pools.map(q=>[pw(q,0,0),q])]
+    down=b=>hole&&b!==hole&&!b.R&&over(b.x)&&b.x[2]<f(hole.c[0],hole.c[1]),
+    key=([r,b])=>{const o=b&&lies(b);return o?deep(o.x)-.001:b&&down(b)?deep(hole.c)-.0005:deep(r)};
+  for(const[r,b]of[...p.map(r=>[r]),...(hole?[[[...hole.c,0],hole]]:[]),...[...balls.map(b=>[b.x,b]),...pools.map(q=>[pw(q,0,0),q])]
       .filter(([r,b])=>abs(r[0]*e[0]+r[1]*e[1])<1.42+(b.R||bound(b)))].sort((i,j)=>key(j)-key(i))){
     const dk=deep(r),near=[];
     // what stands here is hidden by the part of the top nearer the camera than it, and by
@@ -251,14 +274,15 @@ function elevation(p,plane,e,X,Y,w,tag){const s=w/2.8,cx=X+w/2,leg=.6*s,lw=.085*
     // Drawn slopes are twice the true ones, so a body is turned by the difference about the
     // point it rests on -- the floor's, or the top's, or between them as it is between them
     // -- and sits on the drawn surface as it sits on the true one.
-    if(b&&!b.R){const L=surf(b,[0,0,-1]),u=(X,w)=>{const z=f(X[0],X[1]);return max(0,min(1,(X[2]-z)/(topZ(X)-z)))},w=u(L),
+    if(b===hole)cut(tm-HR-.04,tm+HR+.04,dk,1.5);
+    else if(b&&!b.R){const L=surf(b,[0,0,-1]),u=(X,w)=>{const z=f(X[0],X[1]);return max(0,min(1,(X[2]-z)/(topZ(X)-z)))},w=u(L),
         sl=f.g(L[0],L[1]),nf=unit([-sl[1],-sl[2],1]),m=unit(add(mul(nf,1-w),mul(tp.M[2],w))),
         S=surf(b,mul(m,-1)),A=mid(S,u(S)),k=-(m[0]*e[0]+m[1]*e[1])/m[2],r=atan2(k,1)-atan2(2*k,1),cr=cos(r),sr=sin(r),
         // and toward the camera, where the drawing turns nothing, each point of it rises with
         // depth as the drawn surface under it does: by its slope that way once more
         kz=-(m[0]*d[0]+m[1]*d[1])/m[2],
         pt=X=>{const a=((X[0]-S[0])*e[0]+(X[1]-S[1])*e[1])*s,c=-(X[2]-S[2]+kz*((X[0]-S[0])*d[0]+(X[1]-S[1])*d[1]))*s;return[A[0]+a*cr-c*sr,A[1]+a*sr+c*cr]};
-      if(b.off&&!lies(b))cut(tm-bound(b)-.04,tm+bound(b)+.04,dk,1.5);
+      if(b.off&&!lies(b)&&!down(b))cut(tm-bound(b)-.04,tm+bound(b)+.04,dk,1.5);
       if(b.k)body(b,[d[0],d[1],0],pt);else{const c=pt(b.x),g=rad/(hypot(c[0]-A[0],c[1]-A[1])||1);dot(A[0]+(c[0]-A[0])*g,A[1]+(c[1]-A[1])*g,rad,b)}}
     // a film of white: across the eye, its deepest at each place, laid on a section of its
     // own ground, in its true depth; the yolk a dome; the bits of shell where they ride
@@ -270,10 +294,10 @@ function elevation(p,plane,e,X,Y,w,tag){const s=w/2.8,cx=X+w/2,leg=.6*s,lw=.085*
           x.beginPath();for(const c of run){const t=c*FX;x.lineTo(cx+t*s,gy(t,dk)-max(.6,bins.get(c)*s))}
           for(const c of run.reverse()){const t=c*FX;x.lineTo(cx+t*s,gy(t,dk))}
           x.closePath();x.fillStyle=C("white");x.fill();x.lineWidth=.8;x.strokeStyle=C("white-rule");x.stroke()}}
-      const ty=b.yo[0]*e[0]+b.yo[1]*e[1];x.beginPath();x.ellipse(cx+ty*s,gy(ty,dk),.04*s,.03*s,0,P,2*P);x.closePath();
-      x.fillStyle=C("gold-accent");x.fill();x.lineWidth=.8;x.strokeStyle=C("food-ink");x.stroke();
+      const ty=b.yo[0]*e[0]+b.yo[1]*e[1];if(!over(b.yo)){x.beginPath();x.ellipse(cx+ty*s,gy(ty,dk),.04*s,.03*s,0,P,2*P);x.closePath();
+        x.fillStyle=C("gold-accent");x.fill();x.lineWidth=.8;x.strokeStyle=C("food-ink");x.stroke()}
       x.lineWidth=2;x.strokeStyle=C(b.glaze?"crimson-base":"jun-base");
-      for(const c of b.bo){const t=c[0]*e[0]+c[1]*e[1];x.beginPath();x.moveTo(cx+(t-.012)*s,gy(t-.012,dk)-1);x.lineTo(cx+(t+.012)*s,gy(t+.012,dk)-1);x.stroke()}}
+      for(const c of b.bo){if(over(c))continue;const t=c[0]*e[0]+c[1]*e[1];x.beginPath();x.moveTo(cx+(t-.012)*s,gy(t-.012,dk)-1);x.lineTo(cx+(t+.012)*s,gy(t+.012,dk)-1);x.stroke()}}
     // a pool on the top: the white a thin layer on it, the yolk a dome, the bits of shell
     else if(b){const ts=edge(b).map(X=>X[0]*e[0]+X[1]*e[1]),t0=min(...ts),t1=max(...ts),g=spread(b),w=max(1.2,.008*s),
         O=pw(b,0,0),on=t=>b.on?mt(add(O,[(t-tm)*e[0],(t-tm)*e[1],0])):[cx+t*s,gy(t,dk)],
@@ -508,6 +532,23 @@ function pair(o,Pl,reach){const t=toF(Pl.M,sub(o.x,Pl.x)),a=hypot(t[0],t[1]),b=t
   const z=gjk(u=>core(o,u),u=>surf(Pl,u));
   if(z){const m=unit(sub(z.a,z.b));return{n:m,pa:sub(z.a,mul(m,rim(o))),pb:z.b,d:z.d-rim(o),mat:CHINA}}
   const m=unit(sub(o.x,Pl.x)),pa=surf(o,mul(m,-1)),pb=surf(Pl,m);return{n:m,pa,pb,d:dot3(sub(pa,pb),m),mat:CHINA}}
+// A body and the hole, within r: the floor's edge round it, at the edge's point nearest the
+// body (found round the rim by golden sections), where the body is above that point; the wall,
+// straight down, where the body's point furthest out from the hole's axis is below the floor;
+// the bottom. A sphere's nearest points exactly; an egg's by its own outline.
+const lip=t=>{const p=hole.c[0]+HR*cos(t),q=hole.c[1]+HR*sin(t);return[p,q,f(p,q)]},
+  over=X=>hole&&hypot(X[0]-hole.c[0],X[1]-hole.c[1])<HR;
+function cup(A,r,h,cs){const c=hole.c,dx=A.x[0]-c[0],dy=A.x[1]-c[1],dh=hypot(dx,dy);if(dh>HR+bound(A)+r)return;
+  const u=dh>1e-9?[dx/dh,dy/dh,0]:[1,0,0],add_=(n,pa,pb,key)=>{const d=dot3(sub(pa,pb),n);if(d<r)cs.push(meet(A,null,n,pa,pb,d,[0,0,0],[0,0,0],key+A.id,FLOOR,h))},
+    gap=P_=>{if(A.r){const l=len(sub(A.x,P_));return{d:l-A.r,n:mul(sub(A.x,P_),1/(l||1)),a:null}}
+      const z=gjk(v=>core(A,v),()=>P_);return z?{d:z.d-EM,n:unit(sub(z.a,P_)),a:z.a}:{d:-1,n:[0,0,1],a:null}};
+  let lo=atan2(u[1],u[0])-1.2,hi=lo+2.4;const g=.6180339887;let t1=hi-g*(hi-lo),t2=lo+g*(hi-lo),d1=gap(lip(t1)).d,d2=gap(lip(t2)).d;
+  for(let i=0;i<28;i++)if(d1<d2){hi=t2;t2=t1;d2=d1;t1=hi-g*(hi-lo);d1=gap(lip(t1)).d}else{lo=t1;t1=t2;d1=d2;t2=lo+g*(hi-lo);d2=gap(lip(t2)).d}
+  const P_=lip((lo+hi)/2),e=gap(P_);
+  if(e.n[2]>=0&&e.d>-.01)add_(e.n,A.r?sub(A.x,mul(e.n,A.r)):sub(e.a,mul(e.n,EM)),P_,"fe");
+  if(dh<HR){const S=A.r?add(A.x,mul(u,A.r)):surf(A,u),s=hypot(S[0]-c[0],S[1]-c[1])||1e-12,W_=[c[0]+(S[0]-c[0])/s*HR,c[1]+(S[1]-c[1])/s*HR];
+    if(S[2]<f(W_[0],W_[1]))add_(mul(u,-1),S,[W_[0],W_[1],S[2]],"fw");
+    const B_=surf(A,[0,0,-1]);add_([0,0,1],B_,[B_[0],B_[1],hole.b],"fb")}}
 // A contact: body A and body B (or the floor or the table: its point there moving at V,
 // turning at W), the normal n from B toward A, the touching points, and their gap d (less
 // than nothing where pressed in); the bounce (the lesser of the two sides'), friction (their
@@ -582,9 +623,9 @@ function step(h,a,b,I){const cs=[],W=spun(a.M,b.M,h),at=(Q,X)=>add(Q.O,toW(Q.M,X
     if(A.k==3)for(let j=0;j<16;j++){const X=add(A.x,toW(A.M,[PW*cos(P*j/8),PW*sin(P*j/8),-PLATE.zc])),u=toF(a.M,sub(X,a.O));
       if(onTop(u[0],u[1])&&u[2]>.5){const d=u[2]-.67,pb=at(a,[u[0],u[1],.67]);if(d<r+ts*h){A.tt=1;cs.push(meet(A,null,a.M[2],X,pb,d,tv(pb),W,"t"+A.id+"_"+j,WOOD,h))}}
       else{const g=f.g(X[0],X[1]),z=g[0],m=unit([-g[1],-g[2],1]),d=(X[2]-z)*m[2];
-        if(d<r)cs.push(meet(A,null,m,X,[X[0],X[1],z],d,[0,0,0],[0,0,0],"f"+A.id+"_"+j,FLOOR,h))}}
-    // the floor
-    else{const g=ground(A);if(g.d<r)cs.push(meet(A,null,g.n,g.s,g.p,g.d,[0,0,0],[0,0,0],"f"+A.id,FLOOR,h))}
+        if(d<r&&!over(X))cs.push(meet(A,null,m,X,[X[0],X[1],z],d,[0,0,0],[0,0,0],"f"+A.id+"_"+j,FLOOR,h))}}
+    // the floor, but where the hole is; and the hole
+    else{const g=ground(A);if(g.d<r&&!over(g.p))cs.push(meet(A,null,g.n,g.s,g.p,g.d,[0,0,0],[0,0,0],"f"+A.id,FLOOR,h));if(hole)cup(A,r,h,cs)}
     // the top and the legs
     if(hypot(q[0],q[1])<1.12+R&&q[2]>-R&&q[2]<.67+R)for(let k=A.k==3?0:-1;k<n;k++){
       if(k>=0&&(hypot(q[0]-foot(k)[0],q[1]-foot(k)[1])>.061+R||q[2]>.6+R))continue;
@@ -668,6 +709,8 @@ function advance(a,b){const h=STEP/1000,c=k=>[...corner(k),.67],N=balls.length,
     const m=min(24,max(1,-fl(-max(...I.map(mv))*h/.002)));
     let q=a;for(let i=1;i<=m;i++){const t=i/m,r=i==m?b:pose(a.plane.map((z,j)=>z+(b.plane[j]-z)*t),a.t+(b.t-a.t)*t);step(h/m,q,r,I);q=r}}
   for(const o of balls)if(o.broke)spill(o);
+  // what has gone down the hole, all of it below the floor there, is counted, once
+  if(hole){const top=f(hole.c[0],hole.c[1]);for(const o of balls)if(!o.holed&&over(o.x)&&o.x[2]+bound(o)<top){o.holed=1;holed++}}
   // what leaves the map is gone; a meatball, out the door
   const kept=balls.filter(o=>!o.broke),inside=o=>abs(o.x[0])<=1.6&&abs(o.x[1])<=1.6&&o.x[2]>-1;
   for(const o of kept)if(!inside(o))o.k==2?door++:gone++;balls=kept.filter(inside)}
@@ -695,8 +738,9 @@ function lay(x0,y0,top){if(!tp)return;const c=random(),k=c<1/60?3:c<1/60+1/30?1:
         const o=b.x,clr=h=>(b.x=add(o,mul(u,h)),pair(b,Pl,1).d>.0005);let lo=-1;
         for(let h=.3;h>0;h-=.004)if(!clr(h)){lo=h;break}
         if(lo<0)b.x=o;else{let hi=lo+.004;for(let i=0;i<14;i++){const m=(lo+hi)/2;clr(m)?hi=m:lo=m}b.x=add(o,mul(u,hi))}}},
-    // clear of every body, and on the floor of the table's legs and top
-    clear=()=>(top?[]:Array.from({length:n+1},(_,k)=>k-1)).every(k=>{const S=part(k),z=gjk(v=>core(b,v),v=>add(tp.O,toW(tp.M,S(toF(tp.M,v)))));return z&&z.d-rim(b)>.0004})&&
+    // clear of every body, and on the floor of the table's legs and top, and of the hole (what
+    // goes down it must roll there)
+    clear=()=>!(!top&&hole&&hypot(b.x[0]-hole.c[0],b.x[1]-hole.c[1])<HR+bound(b))&&(top?[]:Array.from({length:n+1},(_,k)=>k-1)).every(k=>{const S=part(k),z=gjk(v=>core(b,v),v=>add(tp.O,toW(tp.M,S(toF(tp.M,v)))));return z&&z.d-rim(b)>.0004})&&
       balls.every(o=>{if(len(sub(b.x,o.x))>bound(b)+bound(o)+.001)return 1;if(b.k==3&&o.k==3)return 0;
       if(b.k==3||o.k==3){const[q,Pl]=b.k==3?[o,b]:[b,o],t=toF(Pl.M,sub(q.x,Pl.x)),r=hypot(t[0],t[1]);
         // and not under a plate's rim
@@ -756,8 +800,9 @@ const pw=(q,dx,dy)=>q.on?add(tp.O,toW(tp.M,[q.c[0]+dx,q.c[1]+dy,.67])):[q.c[0]+d
 // density times gravity over six viscosities, FY the yield over density times gravity.
 const FN=56,FX=.02,FC=6767,FY=1.23e-4,FV=5.16e-4,
   cell=(q,i,j)=>[q.o[0]+(i+.5)*FX,q.o[1]+(j+.5)*FX],
-  // the floor under each cell, again whenever the floor is another
-  bed=q=>{q.z=new Float64Array(FN*FN);for(let j=0;j<FN;j++)for(let i=0;i<FN;i++){const p=cell(q,i,j);q.z[j*FN+i]=f(p[0],p[1])}q.live=1;q.calm=0};
+  // the floor under each cell, again whenever the floor is another, and which cells are over
+  // the hole: what flows to its edge pours in and is gone
+  bed=q=>{q.z=new Float64Array(FN*FN);q.dm=new Uint8Array(FN*FN);for(let j=0;j<FN;j++)for(let i=0;i<FN;i++){const p=cell(q,i,j);q.z[j*FN+i]=f(p[0],p[1]);q.dm[j*FN+i]=over(p)?1:0}q.live=1;q.calm=0};
 function film(q){q.o=[q.c[0]-FN*FX/2,q.c[1]-FN*FX/2];q.h=new Float64Array(FN*FN);bed(q);let v=0;
   for(let j=0;j<FN;j++)for(let i=0;i<FN;i++){const p=cell(q,i,j);if(hypot(p[0]-q.c[0],p[1]-q.c[1])<.125){q.h[j*FN+i]=1;v++}}
   for(let k=0;k<FN*FN;k++)q.h[k]*=FV/(v*FX*FX);
@@ -788,7 +833,7 @@ function flow(q,T){if(!q.live)return;
     for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){const a=j*N+i;out[a]=out[a]*dt/FX>h[a]?h[a]*FX/(out[a]*dt):1}
     for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){const a=j*N+i;if(fx[a])fx[a]*=out[fx[a]>0?a:a+1];if(fy[a])fy[a]*=out[fy[a]>0?a:a+N]}
     box[0]=N;box[1]=-1;box[2]=N;box[3]=-1;
-    for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){const a=j*N+i,d=(fx[a]+fy[a]-(i>i0?fx[a-1]:0)-(j>j0?fy[a-N]:0))*dt/FX;h[a]=max(0,h[a]-d);most=max(most,abs(d));
+    for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){const a=j*N+i,d=(fx[a]+fy[a]-(i>i0?fx[a-1]:0)-(j>j0?fy[a-N]:0))*dt/FX;h[a]=q.dm[a]?0:max(0,h[a]-d);most=max(most,abs(d));
       if(h[a]>0){box[0]=min(box[0],i);box[1]=max(box[1],i);box[2]=min(box[2],j);box[3]=max(box[3],j)}}
     if(box[1]<0)break;
     // the yolk and the bits of shell, carried at the surface's speed: three times the flux's
@@ -863,9 +908,10 @@ function wet(q){const N=FN,h=q.h,th=.00025,parts=[],edges=[];
 function pond(q,pl,s){if(q.h){const w=wet(q),P_=X=>pl([X[0],X[1],0]);
     x.beginPath();for(const p of w.parts){trace(x,p.map(P_));x.closePath()}x.fillStyle=C("white");x.fill();
     x.beginPath();for(const[a,b]of w.edges){const A=P_(a),B=P_(b);x.moveTo(A[0],A[1]);x.lineTo(B[0],B[1])}x.lineWidth=.8;x.strokeStyle=C("white-rule");x.stroke();
-    const Y=P_(q.yo);x.beginPath();x.arc(Y[0],Y[1],.04*s,0,7);x.fillStyle=C("gold-accent");x.fill();
+    // (the yolk and the bits of shell, unless the white has carried them down the hole)
+    const Y=P_(q.yo);if(!over(q.yo)){x.beginPath();x.arc(Y[0],Y[1],.04*s,0,7);x.fillStyle=C("gold-accent");x.fill()}
     x.lineWidth=2;x.strokeStyle=C(q.glaze?"crimson-base":"jun-base");
-    for(const b of q.bo){const c=P_(b);x.beginPath();x.arc(c[0],c[1],.015*s,b[2],b[2]+1.8);x.stroke()}return}
+    for(const b of q.bo){if(over(b))continue;const c=P_(b);x.beginPath();x.arc(c[0],c[1],.015*s,b[2],b[2]+1.8);x.stroke()}return}
   const g=spread(q),Y=pl(pw(q,q.y[0],q.y[1]));
   x.beginPath();trace(x,edge(q).map(pl));x.closePath();x.fillStyle=C("white");x.fill();x.lineWidth=.8;x.strokeStyle=C("white-rule");x.stroke();
   x.beginPath();x.arc(Y[0],Y[1],.04*s*g,0,7);x.fillStyle=C("gold-accent");x.fill();
@@ -940,22 +986,31 @@ function eye(p,h,plane){const V=lookout(),{E,F,R,U}=V,fo=V.f,near=.01,o=W/2,
   // they meet along the heights where they change as the plan's do, with its contours every
   // 0.012; far squares fading into the paper
   // (only those a ball round them reaches into the eye's view of, tan 50 degrees each way;
-  // and one that would be drawn wider than 36 points, as four, so near ground is as smooth)
+  // and one that would be drawn wider than 36 points, as four, so near ground is as smooth).
+  // The hole: its edge as the eye sees it, when all of it is before the eye; the floor is drawn
+  // round it, and it dark, as the plan has it, with what is down it seen through it.
+  const open=hole&&(()=>{const L=Array.from({length:48},(_,i)=>cam(lip(2*P*i/48)));return L.every(c=>c[2]>near)?L.map(scr):null})(),
+    down=b=>hole&&over(b.x)&&b.x[2]<f(hole.c[0],hole.c[1]),
+    round_=(g,fn)=>{if(!g){fn();return}x.save();x.beginPath();x.rect(0,0,W,W);trace(x,open);x.closePath();x.clip("evenodd");fn();x.restore()};
   const square=(x0,y0,g)=>{const m=[x0+g/2,y0+g/2,0];m[2]=f(m[0],m[1]);const cc=cam(m),rr=.75*g+.05,tn=1.1918,e=1.556*rr;
     if(cc[2]<near-rr||abs(cc[0])>tn*cc[2]+e||abs(cc[1])>tn*cc[2]+e)return;
     if(fo*g/max(cc[2],near)>36&&g>1/120){const h=g/2;square(x0,y0,h);square(x0+h,y0,h);square(x0,y0+h,h);square(x0+h,y0+h,h);return}
     const q=[[x0,y0],[x0+g,y0],[x0+g,y0+g],[x0,y0+g]].map(v=>[v[0],v[1],f(v[0],v[1])]),z=q.map(v=>v[2]),
-      c=[x0+g/2,y0+g/2,(z[0]+z[1]+z[2]+z[3])/4],a=fog(c);if(a>=1)return;
+      c=[x0+g/2,y0+g/2,(z[0]+z[1]+z[2]+z[3])/4],a=fog(c),rd=open&&hypot(c[0]-hole.c[0],c[1]-hole.c[1])<HR+.75*g;if(a>=1)return;
     // filled and edged in its own wash, so no seam shows between squares; its contours a
-    // square's width later, over the edges of the squares beside it, so none is broken there
-    items.push([dist(c),()=>{for(let k=0;k<3;k++){let Q=q;if(k)Q=keep(Q,cuts[k-1],1);if(k<2)Q=keep(Q,cuts[k],-1);
-        if(Q.length>2&&poly(Q)){x.fillStyle=x.strokeStyle=wash(k,a);x.fill();x.lineWidth=.8;x.stroke()}}}],[dist(c)-g,()=>{
+    // square and a half later, over the edges of the squares round it, so none is broken there
+    items.push([dist(c),()=>round_(rd,()=>{for(let k=0;k<3;k++){let Q=q;if(k)Q=keep(Q,cuts[k-1],1);if(k<2)Q=keep(Q,cuts[k],-1);
+        if(Q.length>2&&poly(Q)){x.fillStyle=x.strokeStyle=wash(k,a);x.fill();x.lineWidth=.8;x.stroke()}}})],[dist(c)-1.5*g,()=>round_(rd,()=>{
       x.beginPath();for(let l=Math.ceil(min(...z)/.012);l*.012<=max(...z);l++){const v=l*.012,cut=[];
         for(let k=0;k<4;k++){const a=z[k],b=z[(k+1)%4];if(a<v!=b<v){const t=(v-a)/(b-a);cut.push(add(q[k],mul(sub(q[(k+1)%4],q[k]),t)))}}
         for(let k=0;k+1<cut.length;k+=2){const A=pt(cut[k]),B=pt(cut[k+1]);if(A&&B){x.moveTo(A[0],A[1]);x.lineTo(B[0],B[1])}}}
-      x.lineWidth=1;x.strokeStyle="rgba("+ink+","+(.28*(1-a)).toFixed(3)+")";x.stroke()}])};
+      x.lineWidth=1;x.strokeStyle="rgba("+ink+","+(.28*(1-a)).toFixed(3)+")";x.stroke()})])};
   for(let j=0;j<48;j++)for(let i=0;i<48;i++)square(-1.6+i/15,-1.6+j/15,1/15);
   for(let j=0;j<32;j++)for(let i=0;i<32;i++)if(i<8||i>23||j<8||j>23)square(-3.2+.2*i,-3.2+.2*j,.2);
+  if(open){const C0=[...hole.c,f(hole.c[0],hole.c[1])],dark="rgb("+pitOf()+")";
+    items.push([dist(C0),()=>{x.globalAlpha=1-fog(C0);x.beginPath();trace(x,open);x.closePath();x.fillStyle=dark;x.fill();x.save();x.clip();
+      for(const b of balls.filter(down).sort((p_,q)=>dist(q.x)-dist(p_.x))){const c=cam(b.x),P2=X=>pt(X)||scr([0,0,1]);
+        if(b.k)body(b,unit(sub(b.x,E)),P2);else{const S=P2(b.x);dot(S[0],S[1],max(1.5,b.r*fo/c[2]),b)}}x.restore();x.globalAlpha=1}])}
   // the other legs, each round from its foot to the top, with its shadow on the floor
   p.forEach((r,m)=>{if(m==V.L)return;const c=foot(m),g=max(0,plane[0]*r[0]+plane[1]*r[1]+plane[2]-h[m]),Fw=add(tp.O,toW(tp.M,[...c,0]));
     items.push([dist(Fw)+.02,()=>{const R_=.09+3*g,pts=Array.from({length:24},(_,i)=>pt([Fw[0]+R_*cos(P*i/12),Fw[1]+R_*sin(P*i/12),f(Fw[0]+R_*cos(P*i/12),Fw[1]+R_*sin(P*i/12))])).filter(Boolean),
@@ -967,13 +1022,13 @@ function eye(p,h,plane){const V=lookout(),{E,F,R,U}=V,fo=V.f,near=.01,o=W/2,
   for(const q of pools)if(q.h){const w=wet(q),pts=w.parts.flat();if(!pts.length)continue;
     items.push([min(...pts.map(v=>dist([v[0],v[1],f(v[0],v[1])])))-.05,()=>{const P3=v=>[v[0],v[1],f(v[0],v[1])+.0005];
       x.globalAlpha=1-fog(P3(q.yo));for(const p_ of w.parts)if(poly(p_.map(P3))){x.fillStyle=C("white");x.fill()}
-      const Y=pt(P3(q.yo));if(Y){const c=cam(P3(q.yo));x.beginPath();x.arc(Y[0],Y[1],.04*fo/c[2],0,7);x.fillStyle=C("gold-accent");x.fill()}x.globalAlpha=1}])}
+      const Y=pt(P3(q.yo));if(Y&&!over(q.yo)){const c=cam(P3(q.yo));x.beginPath();x.arc(Y[0],Y[1],.04*fo/c[2],0,7);x.fillStyle=C("gold-accent");x.fill()}x.globalAlpha=1}])}
   // what lies below the top, or beyond its edge; what lies on it is hidden by it. Each is
   // drawn after the floor it stands on, by its point nearest the eye (and half a square of
   // the floor nearer), so the floor under a plate's rim does not cover the rim; far ones fade
   // as the floor does, and one nearing the edge of the plan's square, where it leaves the
   // world, fades away over its last 5 cm
-  for(const b of balls){const L_=surf(b,[0,0,-1]),q=toF(tp.M,sub(b.x,tp.O));if(onTop(q[0],q[1])&&L_[2]>topZ(L_)-.003)continue;
+  for(const b of balls){const L_=surf(b,[0,0,-1]),q=toF(tp.M,sub(b.x,tp.O));if(onTop(q[0],q[1])&&L_[2]>topZ(L_)-.003||open&&down(b))continue;
     const c=cam(b.x);if(c[2]<near+bound(b))continue;
     const a=(1-fog(b.x))*max(0,min(1,(1.6-max(abs(b.x[0]),abs(b.x[1])))/.12));if(a<=0)continue;
     items.push([dist(surf(b,unit(sub(E,b.x))))-.05,()=>{const d=unit(sub(b.x,E)),P2=X=>pt(X)||scr([0,0,1]);x.globalAlpha=a;
@@ -1026,7 +1081,8 @@ function draw(wall){
   x.font=col.font;
   if(wide){elevation(p,plane,ea,W+32,.52*E+.01*W,E,"a");elevation(p,plane,eb,W+32,W/2+.52*E+.01*W,E,"b")}
   else{elevation(p,plane,ea,0,W*1.4,E,"a");elevation(p,plane,eb,E+24,W*1.4,E,"b")}
-  const on=balls.filter(d=>!d.off),still=balls.filter(d=>d.off&&d.z).length,loose=balls.length-on.length-still,
+  const down=d=>hole&&over(d.x)&&d.x[2]<f(hole.c[0],hole.c[1]),
+    on=balls.filter(d=>!d.off),still=balls.filter(d=>d.off&&d.z&&!down(d)).length,loose=balls.filter(d=>d.off&&!d.z&&!down(d)).length,
     cracked=balls.filter(d=>d.cracks.length).length,broke=pools.length,
     names=[["marble","marbles"],["egg","eggs"],["meatball","meatballs"],["plate of spaghetti","plates of spaghetti"]],
     tally=l=>{const w=names.map((nm,k)=>{const c=l.filter(d=>d.k==k).length;return c&&c+" "+nm[c>1?1:0]}).filter(Boolean);
@@ -1034,10 +1090,17 @@ function draw(wall){
     state=(!up?"It is still.":R.length>1&&b!==a?"It rocks.":up===1?"One foot is in the air.":up+" feet are in the air.")+
       (sneeze&&sim-sneeze.t0<2500?" Somebody sneezed.":"")+
       (on.length?" "+tally(on)+(on.length>1?" are":" is")+" on the table.":"")+(loose?" "+loose+" rolling on the floor.":"")+
-      (still?" "+still+(still>1?" rest":" rests")+" in a hollow.":"")+(gone?" "+gone+" rolled away.":"")+
+      (still?" "+still+(still>1?" rest":" rests")+" in a hollow.":"")+(holed?" "+holed+" went down the hole.":"")+(gone?" "+gone+" rolled away.":"")+
       (door?" "+door+(door>1?" meatballs":" meatball")+" rolled out the door.":"")+
-      (broke?" "+broke+(broke>1?" eggs broke.":" egg broke."):"")+(cracked?" "+cracked+(cracked>1?" eggs are cracked.":" egg is cracked."):"");
+      (broke?" "+broke+(broke>1?" eggs broke.":" egg broke."):"")+(cracked?" "+cracked+(cracked>1?" eggs are cracked.":" egg is cracked."):""),
+    // the label says what is here, and, once there is any, the count
+    one=["a marble","an egg","a meatball","a plate of spaghetti"],
+    here=[...names.map((nm,k)=>{const c=balls.filter(d=>d.k==k).length;return c&&(c>1?c+" "+nm[1]:one[k])}).filter(Boolean),...(broke?[broke>1?broke+" broken eggs":"a broken egg"]:[])],
+    what="a table, a floor"+(hole?", a hole":"")+(here.length?", "+(here.length>1?here.slice(0,-1).join(", ")+" and "+here[here.length-1]:here[0]):""),
+    score=[holed?holed+" in the hole.":"",door?door+(door>1?" meatballs":" meatball")+" out the door.":""].filter(Boolean).join(" ");
   if(state!==said)$("s").textContent=said=state;
+  if(what!==saidWhat)$("what").textContent=saidWhat=what;
+  if(score!==saidScore){const t_=$("tally");t_.textContent=saidScore=score;t_.hidden=!score}
   // a change of theme: the drawing as it was, laid over the new one and let go
   if(old){const k=(wall-t0)/500;if(k>=1||old.width!=c.width||old.height!=c.height)old=null;
     else{x.setTransform(1,0,0,1,0,0);x.globalAlpha=1-ease(k);x.drawImage(old,0,0);x.globalAlpha=1}}
