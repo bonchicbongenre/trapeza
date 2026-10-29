@@ -848,10 +848,25 @@ function camera(e,o,s,tag){const d=[-e[1],e[0]];
   x.moveTo(o-1.36*d[0]*s,o+1.36*d[1]*s);x.lineTo(o-1.18*d[0]*s,o+1.18*d[1]*s);x.stroke();
   x.fillText(tag,o-1.47*d[0]*s-3,o+1.47*d[1]*s+4)}
 
-// How the table stands at a moment t, for its present turn: its feet over the floor, the
-// triangles it can rest on, and the plane of its feet as someone leans on it -- it eases
-// onto its other triangle, lingers, and eases back.
-function stand(t){const p=feet(th),h=p.map(r=>f(r[0],r[1])),R=rests(p,h),a=R[0],b=R[R.length>1?1:0],
+// What a foot stands on: the floor, or whatever on the floor it came down onto. A table
+// with a marble under a foot stands on the marble as on the floor, and is not driven through
+// it: the highest point of anything under the foot's round end that is no higher than the
+// foot already was (what is higher is beside the leg, not under it). A sphere's, exactly;
+// an egg's or a plate's, found down a few lines through the end by their own insides.
+function stood(r,k){let z=f(r[0],r[1]);const zf=tp?add(tp.O,toW(tp.M,[...foot(k),0]))[2]+.002:1/0;
+  const inside=(b,X)=>{const q=toF(b.M,sub(X,b.x));if(b.k==1){const t=q[2]+EGG.tc;return abs(t)<=EL/2&&hypot(q[0],q[1])<=rho(t)}
+      const s=hypot(q[0],q[1]),u=q[2]+PLATE.zc;return s<=PR&&u>=max(0,dish(s)-PT)&&u<=pile(s)},
+    top=(b,Q)=>{const B=bound(b);for(let u=b.x[2]+B;u>b.x[2]-B;u-=.004)if(inside(b,[Q[0],Q[1],u])){let lo=u,hi=u+.004;
+        for(let i=0;i<12;i++){const m=(lo+hi)/2;inside(b,[Q[0],Q[1],m])?lo=m:hi=m}return lo}return-1/0};
+  for(const b of balls){if(!b.off||b.x[2]>z+.4)continue;const l=hypot(b.x[0]-r[0],b.x[1]-r[1]);if(l>bound(b)+.0425)continue;
+    let u=-1/0;if(b.r){const e=max(0,l-.0425);if(e<b.r)u=b.x[2]+sqrt(b.r*b.r-e*e)}
+    else for(let i=0;i<19;i++){const a=2*P*i/12,s=i<12?.0425:i<18?.021:0;u=max(u,top(b,[r[0]+s*cos(a),r[1]+s*sin(a)]))}
+    if(u<=zf)z=max(z,u)}
+  return z}
+// How the table stands at a moment t, for its present turn: its feet over what they stand
+// on, the triangles it can rest on, and the plane of its feet as someone leans on it -- it
+// eases onto its other triangle, lingers, and eases back.
+function stand(t){const p=feet(th),h=p.map(stood),R=rests(p,h),a=R[0],b=R[R.length>1?1:0],
     q=(1-cos(2*P*t/1900))/2,k=calm||R.length<2?0:q*q*q*(q*(6*q-15)+10);
   return{p,h,R,a,b,plane:[0,1,2].map(i=>a[i]+(b[i]-a[i])*k)}}
 

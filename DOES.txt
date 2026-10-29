@@ -11,7 +11,9 @@ What itsthefloor.fyi does. A golf pass must keep every line true.
     the top reaches 1.12.
  4. Dragging turns it, as do the arrow keys (half a degree a press). Turning eases.
  5. The table rests on a triangle of feet that leaves every foot on or above the
-    floor and holds the centre. With two such triangles it rocks between them as a
+    floor and holds the centre. A foot stands on the floor, or on whatever lying on
+    the floor it came down onto -- a marble under a foot holds the table up, and is
+    not crushed out from under it. With two such triangles it rocks between them as a
     leaned-on table does: smoothly, lingering a little at each rest. The page's
     clock runs at five sixths of real time, so everything happens as it would, a
     little slower: about 2.3 s there and back, a fall from the table about 0.28 s.
