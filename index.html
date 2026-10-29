@@ -103,8 +103,8 @@ function rgb(s){const m=/oklch\(([\d.]+)(%?)\s+([\d.]+)\s+([\d.]+)/.exec(s);if(!
 // the family before it, the marbles in the third (one end of it on the table, the other
 // off it). The dot after the theme button turns all three on together. The drawing asks
 // for its colours by their first names. White things -- the white of an egg, china,
-// cheese -- are the light paper and rule (Ding white) in either theme: a white plate is
-// white in a dark room too.
+// cheese -- and food keep their daylight colours in either theme: a white plate is white,
+// and spaghetti pale gold, in a dark room too.
 const fams=[["qingbai","ru","longquan"],["crimson","junsplash","jun"],["gold","amber","rust"]];let g=0;
 function colours(){const cs=getComputedStyle(document.documentElement),bs=getComputedStyle(document.body),F=fams[g],T=fams[(g+2)%3][1],
     M=fams[(g+1)%3],as={"qingbai-wash":F[0]+"-wash","ru-wash":F[1]+"-wash","longquan-wash":F[2]+"-wash",
@@ -112,8 +112,13 @@ function colours(){const cs=getComputedStyle(document.documentElement),bs=getCom
   for(const t of["ink","paper","rule","amber-base","amber-wash","qingbai-wash","ru-wash","longquan-wash","jun-base","crimson-base","junsplash-wash","gold-accent","gold-wash","gold-base","rust-base","rust-accent"]){
     let v=rgb(cs.getPropertyValue("--"+(as[t]||t)));if(!/\d/.test(v))v=rgb(/wash|paper/.test(t)?bs.backgroundColor:bs.color);
     col["--"+t]=v;col["--"+t+"#"]=v.match(/\d+/g).map(Number)}
-  const ding=cs.getPropertyValue("--ding").trim();
-  for(const[t,l,k]of[["white",.95,"paper"],["white-rule",.86,"rule"]])col["--"+t]=ding?rgb("oklch("+l+" "+ding+")"):col["--"+k];
+  // things with colours of their own keep their daylight colours in either theme: white
+  // things the light paper and rule; food -- the yolk, the pasta and its strands, the sauce,
+  // the meatball -- its glazes as the house defines them by day, read from its :root
+  const day=t=>{for(const sh of document.styleSheets||[]){let rs;try{rs=sh.cssRules}catch(e){continue}
+      for(const r of rs)if(r.selectorText==":root"){const v=r.style.getPropertyValue("--"+t).trim();if(v)return v.replace(/var\(--([\w-]+)\)/g,(_,k)=>cs.getPropertyValue("--"+k).trim())}}return""};
+  for(const[t,k]of[["white","paper"],["white-rule","rule"],["food-ink","ink"],["gold-accent"],["gold-wash"],["gold-base"],["rust-base"],["rust-accent"]]){
+    const v=rgb(day(k||t));if(/\d/.test(v)){col["--"+t]=v;col["--"+t+"#"]=v.match(/\d+/g).map(Number)}else if(k){col["--"+t]=col["--"+k];col["--"+t+"#"]=col["--"+k+"#"]}}
   col.font="12px "+cs.getPropertyValue("--typewriter")}
 
 // The plan's floor: three washes, low to high, each a third of its heights, and ink
@@ -250,7 +255,7 @@ function elevation(p,plane,e,X,Y,w,tag){const s=w/2.8,cx=X+w/2,leg=.6*s,lw=.085*
           for(const c of run.reverse()){const t=c*FX;x.lineTo(cx+t*s,gy(t,dk))}
           x.closePath();x.fillStyle=C("white");x.fill();x.lineWidth=.8;x.strokeStyle=C("white-rule");x.stroke()}}
       const ty=b.yo[0]*e[0]+b.yo[1]*e[1];x.beginPath();x.ellipse(cx+ty*s,gy(ty,dk),.04*s,.03*s,0,P,2*P);x.closePath();
-      x.fillStyle=C("gold-accent");x.fill();x.lineWidth=.8;x.strokeStyle=C("ink");x.stroke();
+      x.fillStyle=C("gold-accent");x.fill();x.lineWidth=.8;x.strokeStyle=C("food-ink");x.stroke();
       x.lineWidth=2;x.strokeStyle=C(b.glaze?"crimson-base":"jun-base");
       for(const c of b.bo){const t=c[0]*e[0]+c[1]*e[1];x.beginPath();x.moveTo(cx+(t-.012)*s,gy(t-.012,dk)-1);x.lineTo(cx+(t+.012)*s,gy(t+.012,dk)-1);x.stroke()}}
     // a pool on the top: the white a thin layer on it, the yolk a dome, the bits of shell
@@ -260,7 +265,7 @@ function elevation(p,plane,e,X,Y,w,tag){const s=w/2.8,cx=X+w/2,leg=.6*s,lw=.085*
       if(!b.on)line(t0-.03,t1+.03);
       x.beginPath();for(let i=0;i<22;i++){const q=on(t0+(t1-t0)*(i<11?i:21-i)/10);x.lineTo(q[0],q[1]-(i<11?w:0))}
       x.closePath();x.fillStyle=C("white");x.fill();x.lineWidth=.8;x.strokeStyle=C("white-rule");x.stroke();
-      x.beginPath();x.ellipse(yk[0],yk[1]-w/2,.04*s*g,.03*s*g,0,P,2*P);x.closePath();x.fillStyle=C("gold-accent");x.fill();x.strokeStyle=C("ink");x.stroke();
+      x.beginPath();x.ellipse(yk[0],yk[1]-w/2,.04*s*g,.03*s*g,0,P,2*P);x.closePath();x.fillStyle=C("gold-accent");x.fill();x.strokeStyle=C("food-ink");x.stroke();
       x.lineWidth=2;x.strokeStyle=C(b.glaze?"crimson-base":"jun-base");
       for(const c of b.bits){const t=tm+(c[0]*e[0]+c[1]*e[1])*g,q=on(t-.012),u=on(t+.012);x.beginPath();x.moveTo(q[0],q[1]-1);x.lineTo(u[0],u[1]-1);x.stroke()}}
     else{if(!done[dk.toFixed(3)]){done[dk.toFixed(3)]=1;
@@ -782,8 +787,8 @@ function body(b,d,pt,r){if(!b.k){const c=pt(b.x);dot(c[0],c[1],r,b);return}
 // a meatball: browned, flecked, and the flecks turn with it
 const FLECK=Array.from({length:18},(_,i)=>{const z=1-2*(i+.5)/18,r=sqrt(1-z*z),t=i*2.39996;return[r*cos(t),r*sin(t),z]});
 function ball(b,d,pt){const c=pt(b.x),a1=unit(crs(d,abs(d[2])<.9?[0,0,1]:[1,0,0])),e=pt(add(b.x,mul(a1,MR))),R=hypot(e[0]-c[0],e[1]-c[1]);
-  x.beginPath();x.arc(c[0],c[1],R,0,7);x.fillStyle=C("rust-base");x.fill();x.lineWidth=1;x.strokeStyle=C("ink");x.stroke();
-  x.fillStyle=C("ink");for(const v of FLECK){const w=toW(b.M,v);if(dot3(w,d)<-.25){const p=pt(add(b.x,mul(w,MR*.8)));x.fillRect(p[0]-.8,p[1]-.8,1.6,1.6)}}}
+  x.beginPath();x.arc(c[0],c[1],R,0,7);x.fillStyle=C("rust-base");x.fill();x.lineWidth=1;x.strokeStyle=C("food-ink");x.stroke();
+  x.fillStyle=C("food-ink");for(const v of FLECK){const w=toW(b.M,v);if(dot3(w,d)<-.25){const p=pt(add(b.x,mul(w,MR*.8)));x.fillRect(p[0]-.8,p[1]-.8,1.6,1.6)}}}
 // A plate of spaghetti as the eye along d sees it: the china; the heap, where it shows (from
 // the side the near rim hides its foot); its strands where they face the eye; the sauce and
 // the cheese on top. The heap meets the dish at RE.

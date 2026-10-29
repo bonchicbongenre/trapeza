@@ -58,8 +58,10 @@ What itsthefloor.fyi does. A golf pass must keep every line true.
     wobbly." The console gives the Greek
     word for table, and what it means.
 10. Colours come from the house tokens; a missing token falls back to ink or
-    paper. White things -- the white of an egg, the china of a plate, cheese --
-    are the light theme's paper and rule (Ding white) in either theme. Dark mode follows the system until the theme button ("dark" or
+    paper. Things with colours of their own keep their daylight colours in either
+    theme, as the house defines them by day: white things (the white of an egg, the
+    china of a plate, cheese) the light paper and rule; food (the yolk, the pasta and
+    its strands, the sauce, the meatball) its glazes and ink. Dark mode follows the system until the theme button ("dark" or
     "light", the last word in the row of buttons) turns it for the visit; nothing
     is kept. A change of theme fades over half a second along the house's curve,
     the drawing with the page. Resizing redraws.
