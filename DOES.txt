@@ -57,8 +57,10 @@ What itsthefloor.fyi does. A golf pass must keep every line true.
     takes over its egg's; and a body leaving the world at the plan's edge fades away
     with its section over its last 5 cm. The hole is shown as if seen through the
     ground, as the legs are through the top in the plan: its cut through its middle,
-    straight down to its bottom, is drawn first, in its colour (item 19), and no
-    section of the ground is drawn over it; what stands above the floor, a leg or a
+    straight down to its bottom, is drawn first, in its colour (item 19); ground
+    behind it is not drawn over it, and ground in front lies over it as a veil, a
+    quarter its strength, its ridge running on across, so the hole shows paler the
+    more ground there is in front of it; what stands above the floor, a leg or a
     body, is drawn over it whatever its depth, and what is down it, in it -- so
     nothing comes and goes there as the table turns, nor seems to go down it that
     has not. Each ground is in the plan's three washes, banded at the same heights,

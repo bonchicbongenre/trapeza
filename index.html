@@ -216,10 +216,15 @@ function elevation(p,plane,e,X,Y,w,tag){const s=w/2.8,cx=X+w/2,leg=.6*s,lw=.085*
     // lives inside its own ground, so none of it shows past the green; none over the hole
     cut=(a,b,z,iw)=>{const m=max(8,round((b-a)*20)),pts=[],g=new Path2D();for(let i=0;i<=m;i++){const t=a+(b-a)*i/m;pts.push([cx+t*s,gy(t,z)])}
       g.moveTo(cx+a*s,Y+.12*w);for(const q of pts)g.lineTo(q[0],q[1]);g.lineTo(cx+b*s,Y+.12*w);g.closePath();
+      // (where it is nearer than the hole, it lies over the hole as a veil: what it hides
+      // there shows through it, paler, and the paler for every veil between; its ridge runs
+      // on across the hole, as it is in front of it)
+      const near_=cav&&z<hz,ga=x.globalAlpha,
+        bands=()=>{for(const j of[1,2]){const yk=Y-(lv[0]+(lv[1]-lv[0])*j/3)*2*s;x.fillStyle=C(j<2?"ru-wash":"longquan-wash");x.fillRect(X,Y-.6*w,w,max(0,yk-Y+.6*w))}};
       x.save();if(cav){x.beginPath();x.rect(X,Y-.6*w,w,.72*w);trace(x,cav.shape);x.closePath();x.clip("evenodd")}
-      x.fillStyle=C("qingbai-wash");x.fill(g);x.clip(g);
-      for(const j of[1,2]){const yk=Y-(lv[0]+(lv[1]-lv[0])*j/3)*2*s;x.fillStyle=C(j<2?"ru-wash":"longquan-wash");x.fillRect(X,Y-.6*w,w,max(0,yk-Y+.6*w))}
-      x.beginPath();trace(x,pts);x.lineWidth=iw;x.strokeStyle=C("ink");x.stroke();x.restore()},
+      x.fillStyle=C("qingbai-wash");x.fill(g);x.clip(g);bands();if(!near_){x.beginPath();trace(x,pts);x.lineWidth=iw;x.strokeStyle=C("ink");x.stroke()}x.restore();
+      if(near_){x.save();x.beginPath();trace(x,cav.shape);x.closePath();x.clip();x.clip(g);x.globalAlpha=ga*.25;x.fillStyle=C("qingbai-wash");x.fillRect(X,Y-.6*w,w,.72*w);bands();x.restore();
+        x.save();x.clip(g);x.beginPath();trace(x,pts);x.lineWidth=iw;x.strokeStyle=C("ink");x.stroke();x.restore()}},
     // a point of the world as this camera draws it: by the floor, its relief at twice its
     // size and heights over it as they are; by the table, as part of that rigid piece;
     // anywhere between, weighed by where between it is
