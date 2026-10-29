@@ -424,28 +424,31 @@ function meet(A,B,n,pa,pb,d,V,W,key,e,h){
     c={A,B,n,ra,rb,d,V,W,h,key,t1,t2,e:min(A.e,B?B.e:e),tw:max(A.tw,B?B.tw:0),kn:1/kl(n,n),
       kt:i2(kl(t1,t1),kl(t1,t2),kl(t2,t1),kl(t2,t2)),kr:i2(ka(t1,t1),ka(t1,t2),ka(t2,t1),ka(t2,t2)),kw:1/ka(n,n),ln:0,lt:[0,0],lr:[0,0],lw:0},
     o=A.hm&&A.hm.get(key);
-  c.v0=dot3(sub(add(A.v,crs(A.w,ra)),B?add(B.v,crs(B.w,rb)):V),n);
-  if(o){const s=h/o[4];c.ln=o[0]*s;c.lt=[dot3(o[1],t1)*s,dot3(o[1],t2)*s];c.lr=[dot3(o[2],t1)*s,dot3(o[2],t2)*s];c.lw=o[3]*s;
-    const J=add(add(mul(n,c.ln),mul(t1,c.lt[0])),mul(t2,c.lt[1])),T=add(add(mul(t1,c.lr[0]),mul(t2,c.lr[1])),mul(n,c.lw));
-    kick(A,J,ra);twirl(A,T);if(B){kick(B,mul(J,-1),rb);twirl(B,mul(T,-1))}}
+  c.v0=dot3(sub(add(A.v,crs(A.w,ra)),B?add(B.v,crs(B.w,rb)):V),n);c.o=o;
   return c}
+// begin a contact from the last step's pushes there, scaled to this step's length -- only
+// once every contact has taken the speed its bodies meet at, untouched by any of this
+function warm(c){const{A,B,n,ra,rb,t1,t2,h,o}=c;if(!o)return;const s=h/o[4];
+  c.ln=o[0]*s;c.lt=[dot3(o[1],t1)*s,dot3(o[1],t2)*s];c.lr=[dot3(o[2],t1)*s,dot3(o[2],t2)*s];c.lw=o[3]*s;
+  const J=add(add(mul(n,c.ln),mul(t1,c.lt[0])),mul(t2,c.lt[1])),T=add(add(mul(t1,c.lr[0]),mul(t2,c.lr[1])),mul(n,c.lw));
+  kick(A,J,ra);twirl(A,T);if(B){kick(B,mul(J,-1),rb);twirl(B,mul(T,-1))}}
 // One push at a contact: mode 0 keeps the gap, and parts any overlap by a fifth a step (at
 // most 4 cm/s, so nothing is flung); mode 1 keeps the gap without the parting; mode 2 is
-// the bounce.
-// Then friction, within MU of the push; rolling and twist, within their levers.
+// the bounce. Then friction, within MU of the push; rolling and twist, within their levers.
+// It returns how much it changed the speed there, so the rounds can stop when they agree.
 function push(c,mode){const{A,B,n,ra,rb,h}=c,rel=()=>sub(add(A.v,crs(A.w,ra)),B?add(B.v,crs(B.w,rb)):c.V),wr=()=>sub(A.w,B?B.w:c.W);
-  if(mode==2){if(!(c.v0<-VT&&c.ln>0))return;c.hit=1}
+  if(mode==2){if(!(c.v0<-VT&&c.ln>0))return 0;c.hit=1}
   const g=mode==1?c.dn:c.d,tg=mode==2?-c.e*c.v0:g>0?-g/h:mode?0:min(.1,.2*max(0,-g-.0005)/h),
     l=max(0,c.ln-c.kn*(dot3(rel(),n)-tg)),dl=l-c.ln;
   c.ln=l;kick(A,mul(n,dl),ra);if(B)kick(B,mul(n,-dl),rb);
-  if(mode==2)return;
+  if(mode==2)return 0;
   let v=rel(),K=c.kt,a=c.lt[0]-K[0]*dot3(v,c.t1)-K[1]*dot3(v,c.t2),b=c.lt[1]-K[2]*dot3(v,c.t1)-K[3]*dot3(v,c.t2),m=hypot(a,b),lim=MU*c.ln;
   if(m>lim){a*=lim/m;b*=lim/m}
-  let J=add(mul(c.t1,a-c.lt[0]),mul(c.t2,b-c.lt[1]));c.lt=[a,b];kick(A,J,ra);if(B)kick(B,mul(J,-1),rb);
+  let J=add(mul(c.t1,a-c.lt[0]),mul(c.t2,b-c.lt[1]));const ch=max(abs(dl),len(J))/c.kn;c.lt=[a,b];kick(A,J,ra);if(B)kick(B,mul(J,-1),rb);
   v=wr();K=c.kr;a=c.lr[0]-K[0]*dot3(v,c.t1)-K[1]*dot3(v,c.t2);b=c.lr[1]-K[2]*dot3(v,c.t1)-K[3]*dot3(v,c.t2);m=hypot(a,b);lim=RR*c.ln;
   if(m>lim){a*=lim/m;b*=lim/m}
   J=add(mul(c.t1,a-c.lr[0]),mul(c.t2,b-c.lr[1]));c.lr=[a,b];twirl(A,J);if(B)twirl(B,mul(J,-1));
-  lim=MU*c.tw*c.ln;a=max(-lim,min(lim,c.lw-c.kw*dot3(wr(),n)));J=mul(n,a-c.lw);c.lw=a;twirl(A,J);if(B)twirl(B,mul(J,-1))}
+  lim=MU*c.tw*c.ln;a=max(-lim,min(lim,c.lw-c.kw*dot3(wr(),n)));J=mul(n,a-c.lw);c.lw=a;twirl(A,J);if(B)twirl(B,mul(J,-1));return ch}
 
 // One step of the world, h seconds, the table moving from pose a to pose b: gravity; a raw
 // egg's liquid drawn round; the contacts; ten rounds of pushes; the bodies move; four
@@ -489,16 +492,21 @@ function step(h,a,b,I){const cs=[],W=spun(a.M,b.M,h),at=(Q,X)=>add(Q.O,toW(Q.M,X
       if(z){m=unit(sub(z.a,z.b));pa=sub(z.a,mul(m,rim(A)));pb=add(z.b,mul(m,rim(B)))}
       else{m=unit(e);pa=surf(A,mul(m,-1));pb=surf(B,m)}}
     const d=dot3(sub(pa,pb),m);if(d<r+rB){if(B.z)B.z=B.q=0;cs.push(meet(A,B,m,pa,pb,d,0,0,A.id+"_"+B.id,0,h))}});
-  for(let i=0;i<3;i++)for(const c of cs)push(c,0);
+  // rounds of pushes until they agree (no contact's speed changed by 0.04 mm/s), at most ten
+  const rounds=(mode,most)=>{for(let i=0;i<most;i++){let e=0;for(const c of cs)e=max(e,push(c,mode));if(e<1e-4)break}};
+  for(const c of cs)warm(c);
+  rounds(0,10);
   for(const c of cs)c.dn=c.d+h*dot3(sub(add(c.A.v,crs(c.A.w,c.ra)),c.B?add(c.B.v,crs(c.B.w,c.rb)):c.V),c.n);
   // a body held by nothing flies as gravity has it, exactly; one held moves at its speed
   const held=new Set();for(const c of cs)if(c.ln>0){held.add(c.A);held.add(c.B)}
   for(const o of I)if(!o.z){o.x=add(o.x,mul(o.v,h));if(!held.has(o))o.x[2]+=G*h*h/2;spin(o,h);o.w=inv(o,o.L)}
-  for(const c of cs)push(c,1);
+  rounds(1,4);
+  // what is remembered is the push that holds, not a bounce's
+  for(const c of cs)c.keep=c.ln;
   for(const c of cs)push(c,2);
   // each body keeps the pushes of the contacts it began, to begin from next step
   for(const o of I)if(!o.z)o.hm=new Map();
-  for(const c of cs)c.A.hm.set(c.key,[c.ln,add(mul(c.t1,c.lt[0]),mul(c.t2,c.lt[1])),add(mul(c.t1,c.lr[0]),mul(c.t2,c.lr[1])),c.lw,h]);
+  for(const c of cs)c.A.hm.set(c.key,[c.keep,add(mul(c.t1,c.lt[0]),mul(c.t2,c.lt[1])),add(mul(c.t1,c.lr[0]),mul(c.t2,c.lr[1])),c.lw,h]);
   for(const c of cs){if(c.ln>0&&c.key[0]=="f")c.A.fl=1;if(!c.hit)continue;
     const E=c.kn*c.v0*c.v0/2,two=c.A.k&&c.B&&c.B.k?2:1;
     for(const[o,p]of[[c.A,add(c.A.x,c.ra)],[c.B,c.B&&add(c.B.x,c.rb)]])
