@@ -234,7 +234,21 @@ function elevation(p,plane,e,X,Y,w,tag){const s=w/2.8,cx=X+w/2,leg=.6*s,lw=.085*
         pt=X=>{const a=((X[0]-S[0])*e[0]+(X[1]-S[1])*e[1])*s,c=-(X[2]-S[2])*s;return[A[0]+a*cr-c*sr,A[1]+a*sr+c*cr]};
       if(b.fl)line(tm-bound(b)-.04,tm+bound(b)+.04);
       if(b.k)body(b,[d[0],d[1],0],pt);else{const c=pt(b.x),g=rad/(hypot(c[0]-A[0],c[1]-A[1])||1);dot(A[0]+(c[0]-A[0])*g,A[1]+(c[1]-A[1])*g,rad,b)}}
-    // a pool: the white a thin layer on its ground, the yolk a dome, the bits of shell
+    // a film of white: across the eye, its deepest at each place, laid on its own ground, in
+    // its true depth; the yolk a dome; the bits of shell where they ride
+    else if(b&&b.h){const N=FN,bins=new Map();
+      for(let a=0;a<N*N;a++)if(b.h[a]>.00025){const p=cell(b,a%N,fl(a/N)),t=round((p[0]*e[0]+p[1]*e[1])/FX);bins.set(t,max(bins.get(t)||0,b.h[a]))}
+      const ks=[...bins.keys()].sort((p,q)=>p-q);
+      if(ks.length){line(ks[0]*FX-.03,ks[ks.length-1]*FX+.03);
+        for(let i=0;i<ks.length;){let j=i;while(j+1<ks.length&&ks[j+1]==ks[j]+1)j++;const run=ks.slice(i,j+1);i=j+1;
+          x.beginPath();for(const c of run){const t=c*FX;x.lineTo(cx+t*s,gy(t,dk)-max(.6,bins.get(c)*s))}
+          for(const c of run.reverse()){const t=c*FX;x.lineTo(cx+t*s,gy(t,dk))}
+          x.closePath();x.fillStyle=C("paper");x.fill();x.lineWidth=.8;x.strokeStyle=C("rule");x.stroke()}}
+      const ty=b.yo[0]*e[0]+b.yo[1]*e[1];x.beginPath();x.ellipse(cx+ty*s,gy(ty,dk),.04*s,.03*s,0,P,2*P);x.closePath();
+      x.fillStyle=C("gold-accent");x.fill();x.lineWidth=.8;x.strokeStyle=C("ink");x.stroke();
+      x.lineWidth=2;x.strokeStyle=C(b.glaze?"crimson-base":"jun-base");
+      for(const c of b.bo){const t=c[0]*e[0]+c[1]*e[1];x.beginPath();x.moveTo(cx+(t-.012)*s,gy(t-.012,dk)-1);x.lineTo(cx+(t+.012)*s,gy(t+.012,dk)-1);x.stroke()}}
+    // a pool on the top: the white a thin layer on it, the yolk a dome, the bits of shell
     else if(b){const ts=edge(b).map(X=>X[0]*e[0]+X[1]*e[1]),t0=min(...ts),t1=max(...ts),g=spread(b),w=max(1.2,.008*s),
         O=pw(b,0,0),on=t=>b.on?mt(add(O,[(t-tm)*e[0],(t-tm)*e[1],0])):[cx+t*s,gy(t,dk)],
         Q=pw(b,b.y[0],b.y[1]),yk=on(Q[0]*e[0]+Q[1]*e[1]);
@@ -677,16 +691,73 @@ function drop(u,v){if(!tp)return;const q=toF(tp.M,sub([u,v,topZ([u,v])],tp.O));
 function carry(){if(!tp)return;const a=tp,b=tp=pose(stand(sim).plane,th),re=v=>toW(b.M,toF(a.M,v));
   for(const o of balls){o.z=o.q=0;o.hm=0;
     if(!o.off){o.x=add(b.O,re(sub(o.x,a.O)));o.M=o.M.map(re);o.v=re(o.v);o.L=re(o.L);o.H=re(o.H);o.w=inv(o,o.L)}
-    else if(o.fl)for(let i=0;i<3;i++){const g=ground(o);o.x=sub(o.x,mul(g.n,g.d))}}}
-// An egg broken open: its white spread round its yolk where it lay, bits of its shell about
-function spill(o){const on=!o.off,q=on?toF(tp.M,sub(o.x,tp.O)):o.x;
-  pools.push({c:[q[0],q[1]],on,t0:sim,glaze:o.off,R:.15,a:[rnd(.12),random()*7,rnd(.08),random()*7],y:[rnd(.03),rnd(.03)],
-    bits:Array.from({length:5},()=>{const a=random()*2*P,r=.05+random()*.13;return[r*cos(a),r*sin(a),random()*7]})})}
-// a point of a pool, dx and dy from its middle, where it lies; how far it has spread (over
-// half a second, as drawn: the white is not followed as a liquid); its edge
+    else if(o.fl)for(let i=0;i<3;i++){const g=ground(o);o.x=sub(o.x,mul(g.n,g.d))}}
+  // and spilt white lies on whatever floor is there now, and flows on it
+  for(const q of pools)if(q.h)bed(q)}
+// An egg broken open: its white round its yolk where it broke, bits of its shell about; on
+// the floor the white flows from there
+function spill(o){const on=!o.off,q=on?toF(tp.M,sub(o.x,tp.O)):o.x,
+    p={c:[q[0],q[1]],on,t0:sim,glaze:o.off,R:.15,a:[rnd(.12),random()*7,rnd(.08),random()*7],y:[rnd(.03),rnd(.03)],
+      bits:Array.from({length:5},()=>{const a=random()*2*P,r=.05+random()*.08;return[r*cos(a),r*sin(a),random()*7]})};
+  if(!on)film(p);pools.push(p)}
+// a point of a pool, dx and dy from its middle, where it lies; how far it has spread (on the
+// top, over half a second, as drawn); its edge there
 const pw=(q,dx,dy)=>q.on?add(tp.O,toW(tp.M,[q.c[0]+dx,q.c[1]+dy,.67])):[q.c[0]+dx,q.c[1]+dy,f(q.c[0]+dx,q.c[1]+dy)],
-  spread=q=>1-exp(-(sim-q.t0)/150),
+  spread=q=>q.h?1:1-exp(-(sim-q.t0)/150),
   edge=q=>{const g=spread(q),a=q.a;return Array.from({length:40},(_,i)=>{const t=P*i/20,r=q.R*g*(1+a[0]*sin(2*t+a[1])+a[2]*sin(3*t+a[3]));return pw(q,r*cos(t),r*sin(t))})};
+
+// Egg white on the floor, a liquid: a thin film over the floor's relief, flowing as thin
+// films do (lubrication), as a Bingham fluid -- still until the stress at the floor passes
+// its yield, 0.5 Pa (whole white measures below 0.8), then with a plastic viscosity of 0.1
+// Pa s (an estimate: egg white thins as it is sheared, and a creeping film shears slowly);
+// 1.035 g a cubic centimetre, 33 of them. The splash is not followed: the white starts as
+// a splash leaves it, 10 cm across. Its depth h on a square of cells 8 mm a side, 45 cm
+// across, about where it broke; the yolk and the bits of shell ride its surface. FC is the
+// density times gravity over six viscosities, FY the yield over density times gravity.
+const FN=56,FX=.02,FC=6767,FY=1.23e-4,FV=5.16e-4,
+  cell=(q,i,j)=>[q.o[0]+(i+.5)*FX,q.o[1]+(j+.5)*FX],
+  // the floor under each cell, again whenever the floor is another
+  bed=q=>{q.z=new Float64Array(FN*FN);for(let j=0;j<FN;j++)for(let i=0;i<FN;i++){const p=cell(q,i,j);q.z[j*FN+i]=f(p[0],p[1])}q.live=1;q.calm=0};
+function film(q){q.o=[q.c[0]-FN*FX/2,q.c[1]-FN*FX/2];q.h=new Float64Array(FN*FN);bed(q);let v=0;
+  for(let j=0;j<FN;j++)for(let i=0;i<FN;i++){const p=cell(q,i,j);if(hypot(p[0]-q.c[0],p[1]-q.c[1])<.125){q.h[j*FN+i]=1;v++}}
+  for(let k=0;k<FN*FN;k++)q.h[k]*=FV/(v*FX*FX);
+  q.box=[FN,-1,FN,-1];for(let j=0;j<FN;j++)for(let i=0;i<FN;i++)if(q.h[j*FN+i]>0){q.box[0]=min(q.box[0],i);q.box[1]=max(q.box[1],i);q.box[2]=min(q.box[2],j);q.box[3]=max(q.box[3],j)}
+  q.yo=[q.c[0]+q.y[0],q.c[1]+q.y[1]];q.bo=q.bits.map(b=>[q.c[0]+b[0],q.c[1]+b[1],b[2]])}
+// T seconds of the film: through each face between cells, the flux a Bingham film carries
+// down the slope of its surface (none where it is no deeper than its plug), taken from the
+// cell it leaves, never more than that cell holds; in steps short enough to be stable. What
+// rides it moves at its surface's speed.
+function flow(q,T){if(!q.live)return;
+  // the square moves with the white, so no edge of it ever stops the flow; where it is wet
+  // is kept as a box, which can grow by a cell a step
+  const N=FN,box=q.box||(q.box=[0,N-1,0,N-1]);
+  if(box[0]<3||box[2]<3||box[1]>N-4||box[3]>N-4){const di=fl((box[0]+box[1])/2)-N/2,dj=fl((box[2]+box[3])/2)-N/2,g=new Float64Array(N*N);
+    for(let j=0;j<N;j++)for(let i=0;i<N;i++){const si=i+di,sj=j+dj;if(si>=0&&sj>=0&&si<N&&sj<N)g[j*N+i]=q.h[sj*N+si]}
+    q.h=g;q.o=[q.o[0]+di*FX,q.o[1]+dj*FX];box[0]-=di;box[1]-=di;box[2]-=dj;box[3]-=dj;bed(q)}
+  const h=q.h,z=q.z,H=k=>z[k]+h[k];let t=0,most=0;
+  q.fx=q.fx||new Float64Array(N*N);q.fy=q.fy||new Float64Array(N*N);q.out=q.out||new Float64Array(N*N);const fx=q.fx,fy=q.fy,out=q.out;
+  const face=(a,b,g,gt,F)=>{const S=hypot(g,gt),u=g>0?b:a,hu=h[u],Y=S?FY/S:1/0;if(hu<=Y){F[a]=0;return 0}const D=FC*(hu-Y)**2*(2*hu+Y);F[a]=-D*g;return D};
+  while(t<T){let dm=1e-12;
+    // only where it is wet, and a cell beyond
+    const i0=max(0,box[0]-1),i1=min(N-1,box[1]+1),j0=max(0,box[2]-1),j1=min(N-1,box[3]+1);
+    for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){const a=j*N+i;fx[a]=fy[a]=out[a]=0;
+      if(i<N-1){const gt=j>0&&j<N-1?(H(a+N)-H(a-N)+H(a+N+1)-H(a-N+1))/(4*FX):0;dm=max(dm,face(a,a+1,(H(a+1)-H(a))/FX,gt,fx))}
+      if(j<N-1){const gt=i>0&&i<N-1?(H(a+1)-H(a-1)+H(a+N+1)-H(a+N-1))/(4*FX):0;dm=max(dm,face(a,a+N,(H(a+N)-H(a))/FX,gt,fy))}}
+    const dt=min(T-t,.2*FX*FX/dm);
+    for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){const a=j*N+i;if(fx[a]>0)out[a]+=fx[a];else if(fx[a]<0)out[a+1]-=fx[a];if(fy[a]>0)out[a]+=fy[a];else if(fy[a]<0)out[a+N]-=fy[a]}
+    for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){const a=j*N+i;out[a]=out[a]*dt/FX>h[a]?h[a]*FX/(out[a]*dt):1}
+    for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){const a=j*N+i;if(fx[a])fx[a]*=out[fx[a]>0?a:a+1];if(fy[a])fy[a]*=out[fy[a]>0?a:a+N]}
+    box[0]=N;box[1]=-1;box[2]=N;box[3]=-1;
+    for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){const a=j*N+i,d=(fx[a]+fy[a]-(i>i0?fx[a-1]:0)-(j>j0?fy[a-N]:0))*dt/FX;h[a]=max(0,h[a]-d);most=max(most,abs(d));
+      if(h[a]>0){box[0]=min(box[0],i);box[1]=max(box[1],i);box[2]=min(box[2],j);box[3]=max(box[3],j)}}
+    if(box[1]<0)break;
+    // the yolk and the bits of shell, carried at the surface's speed: three times the flux's
+    // factor, times the depth beyond the plug squared, down the surface's slope
+    for(const p of[q.yo,...q.bo]){const i=fl((p[0]-q.o[0])/FX),j=fl((p[1]-q.o[1])/FX);if(i<1||j<1||i>N-2||j>N-2)continue;const a=j*N+i,
+        gx=(H(a+1)-H(a-1))/(2*FX),gy=(H(a+N)-H(a-N))/(2*FX),S=hypot(gx,gy),Y=S?FY/S:1/0;
+      if(h[a]>Y){const u=3*FC*(h[a]-Y)**2;p[0]-=u*gx*dt;p[1]-=u*gy*dt}}
+    t+=dt}
+  q.calm=most<1e-7?q.calm+T:0;if(q.calm>.5)q.live=0}
 
 // A body as an eye looking along d sees it, through pt (a point of the world to the page):
 // a marble a disc of radius r; an egg its outline, and on the side toward the eye its
@@ -739,8 +810,23 @@ function platter(b,d,pt){const W_=v=>add(b.x,toW(b.M,v)),dl=toF(b.M,d),above=dl[
   x.restore()}
 // a marble
 function dot(X,Y,r,b){x.beginPath();x.arc(X,Y,r,0,7);x.fillStyle=C(b.off?"crimson-base":"jun-base");x.fill();x.lineWidth=1;x.strokeStyle=C("ink");x.stroke()}
+// Where a film of white is, from above: each square of four cells' centres cut where the
+// depth passes a tenth of a millimetre -- the wet part of it, and the edge through it
+function wet(q){const N=FN,h=q.h,th=.00025,parts=[],edges=[];
+  for(let j=0;j<N-1;j++)for(let i=0;i<N-1;i++){const k=[j*N+i,j*N+i+1,(j+1)*N+i+1,(j+1)*N+i],v=k.map(a=>h[a]);if(v.every(u=>u<=th))continue;
+    const c=[cell(q,i,j),cell(q,i+1,j),cell(q,i+1,j+1),cell(q,i,j+1)],poly=[],cut=[];
+    for(let m=0;m<4;m++){const n=(m+1)%4;if(v[m]>th)poly.push(c[m]);
+      if(v[m]>th!=v[n]>th){const t=(th-v[m])/(v[n]-v[m]),p=[c[m][0]+(c[n][0]-c[m][0])*t,c[m][1]+(c[n][1]-c[m][1])*t];poly.push(p);cut.push(p)}}
+    parts.push(poly);for(let m=0;m+1<cut.length;m+=2)edges.push([cut[m],cut[m+1]])}
+  return{parts,edges}}
 // a pool from above: the white, the yolk, the bits of shell
-function pond(q,pl,s){const g=spread(q),Y=pl(pw(q,q.y[0],q.y[1]));
+function pond(q,pl,s){if(q.h){const w=wet(q),P_=X=>pl([X[0],X[1],0]);
+    x.beginPath();for(const p of w.parts){trace(x,p.map(P_));x.closePath()}x.fillStyle=C("paper");x.fill();
+    x.beginPath();for(const[a,b]of w.edges){const A=P_(a),B=P_(b);x.moveTo(A[0],A[1]);x.lineTo(B[0],B[1])}x.lineWidth=.8;x.strokeStyle=C("rule");x.stroke();
+    const Y=P_(q.yo);x.beginPath();x.arc(Y[0],Y[1],.04*s,0,7);x.fillStyle=C("gold-accent");x.fill();
+    x.lineWidth=2;x.strokeStyle=C(q.glaze?"crimson-base":"jun-base");
+    for(const b of q.bo){const c=P_(b);x.beginPath();x.arc(c[0],c[1],.015*s,b[2],b[2]+1.8);x.stroke()}return}
+  const g=spread(q),Y=pl(pw(q,q.y[0],q.y[1]));
   x.beginPath();trace(x,edge(q).map(pl));x.closePath();x.fillStyle=C("paper");x.fill();x.lineWidth=.8;x.strokeStyle=C("rule");x.stroke();
   x.beginPath();x.arc(Y[0],Y[1],.04*s*g,0,7);x.fillStyle=C("gold-accent");x.fill();
   x.lineWidth=2;x.strokeStyle=C(q.glaze?"crimson-base":"jun-base");
@@ -767,7 +853,8 @@ function draw(wall){
   const now=wall*5/6;
   if(sim==null||now-sim>200){sim=now;tp=null}
   tp=tp||pose(stand(sim).plane,th);
-  while(sim+STEP<=now){const a=tp;sim+=STEP;th=to+(th-to)*exp(-STEP/56);tp=pose(stand(sim).plane,th);if(balls.length)advance(a,tp)}
+  while(sim+STEP<=now){const a=tp;sim+=STEP;th=to+(th-to)*exp(-STEP/56);tp=pose(stand(sim).plane,th);if(balls.length)advance(a,tp);
+    for(const q of pools)if(q.h)flow(q,STEP/1000)}
   const{p,h,R,a,b,plane}=stand(sim),
     gap=p.map((r,m)=>max(a[0]*r[0]+a[1]*r[1]+a[2],b[0]*r[0]+b[1]*r[1]+b[2])-h[m]),
     up=gap.filter(v=>v>.004).length,s=W/3.2,o=W/2,K=1.12*s,top=new Path2D(),T=tone(plane),
@@ -819,7 +906,7 @@ function draw(wall){
     else{x.setTransform(1,0,0,1,0,0);x.globalAlpha=1-ease(k);x.drawImage(old,0,0);x.globalAlpha=1}}
   // when nothing moves -- no lean, no turn, nothing awake, no sneeze to come or going, no
   // spreading, no fade -- the page rests, and draws nothing, until something wakes it
-  if(drag!==null||abs(to-th)>1e-4||R.length>1&&!calm||old||balls.some(d=>!d.z||d.at)||sneeze||pools.some(q=>sim-q.t0<1500))requestAnimationFrame(draw);
+  if(drag!==null||abs(to-th)>1e-4||R.length>1&&!calm||old||balls.some(d=>!d.z||d.at)||sneeze||pools.some(q=>q.live||sim-q.t0<1500))requestAnimationFrame(draw);
   else asleep=true}
 function wake(){if(asleep){asleep=false;requestAnimationFrame(draw)}}
 // the curve the page's own colours fade along, CSS's "ease": cubic-bezier(.25,.1,.25,1)

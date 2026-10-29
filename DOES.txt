@@ -116,9 +116,20 @@ What itsthefloor.fyi does. A golf pass must keep every line true.
     as a spheroid of its proportions does, the rest by viscosity again. An egg
     rolls in arcs, round the apex of the cone that touches it where it lies. Met
     as hard as a fall of 1 cm onto a hard floor, it cracks where it was met; a raw
-    one met as hard as a fall of 20 cm breaks open. A broken egg's white lies
-    round its yolk, with bits of shell, where it broke; the pool spreads over half
-    a second as drawn, not as a liquid followed.
+    one met as hard as a fall of 20 cm breaks open. On the floor its white is a
+    liquid: a thin film flowing over the floor's relief as thin films do, a
+    Bingham fluid that is still until the stress at the floor passes its yield
+    (0.5 Pa; whole white measures below 0.8) and then flows with a plastic
+    viscosity of 0.1 Pa s (an estimate: egg white thins as it is sheared, and a
+    creeping film shears slowly); 33 cubic centimetres, its depth kept on cells 8
+    mm a side. It starts as a splash would leave it, 10 cm across (the splash is
+    not followed), runs downhill and into hollows, and stops where it has thinned
+    to its yield: on a level floor 17 cm across and 3 mm deep, as a static
+    Bingham puddle is. The yolk and the bits of shell ride its surface. On
+    another floor it flows again, on that one. Nothing rolling through it feels
+    it, and it flows under the legs as if they were not there. On the top, where
+    no egg breaks but by something a hand could not do, the white is drawn,
+    spreading over half a second.
 17. On top of spaghetti, all covered with cheese: a dinner plate, china, 26 cm
     across, its well 16 cm, its rim rising to 2.4 cm; on it a heap of spaghetti in
     sauce, 4 cm high, slumping into the plate as a heap does, its strands, sauce
