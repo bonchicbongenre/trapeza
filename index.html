@@ -81,11 +81,12 @@ const rnd=a=>(random()*2-1)*a,floor=g=>Object.assign((u,v)=>g(u,v)[0],{g}),
     ()=>{const a=rnd(.05),b=rnd(.05),g=gauss(3,.03,[.3,.4]);
       return floor((u,v)=>{const r=g(u,v);return[a*u*v+b*(u*u-v*v)+r[0],a*v+2*b*u+r[1],a*u-2*b*v+r[2]]})}],
   another=()=>{f=kinds[fl(random()*kinds.length)]();hole=dig();if(W)paint();carry();wake()},
-  // A hole in the floor: a golf cup, 10.8 cm across and 10.2 cm deep, its bottom level, its
-  // wall straight down from the floor's edge round it; somewhere on a slope (of at least 3 in
-  // 100, so it is never in a hollow), beyond where the legs can stand and inside the plan.
-  // Each floor has its own.
-  HR=.135,HD=.254,
+  // A hole in the floor, 5 cm across -- room for a meatball, or an egg on its side -- and 7
+  // deep, so even an egg on its end goes all the way down; its bottom level, its wall straight
+  // down from the floor's edge round it; somewhere on a slope (of at least 3 in 100, so it is
+  // never in a hollow), beyond where the legs can stand and inside the plan. Each floor has
+  // its own.
+  HR=.0625,HD=.175,
   dig=()=>{let best=null;for(let i=0;i<300;i++){const a=random()*2*P,r=1.18+random()*.3,c=[r*cos(a),r*sin(a)];
       if(abs(c[0])>1.6-HR-.02||abs(c[1])>1.6-HR-.02)continue;const g=f.g(c[0],c[1]),s=hypot(g[1],g[2]);
       if(!best||s>best.s)best={c,b:g[0]-HD,s};if(s>=.03)break}return best},
@@ -120,8 +121,9 @@ function rgb(s){const m=/oklch\(([\d.]+)(%?)\s+([\d.]+)\s+([\d.]+)/.exec(s);if(!
 const fams=[["qingbai","ru","longquan"],["crimson","junsplash","jun"],["gold","amber","rust"]];let g=0;
 function colours(){const cs=getComputedStyle(document.documentElement),bs=getComputedStyle(document.body),F=fams[g],T=fams[(g+2)%3][1],
     M=fams[(g+1)%3],as={"qingbai-wash":F[0]+"-wash","ru-wash":F[1]+"-wash","longquan-wash":F[2]+"-wash",
+    "qingbai-base":F[0]+"-base","ru-base":F[1]+"-base","longquan-base":F[2]+"-base",
     "amber-base":T+"-base","amber-wash":T+"-wash","jun-base":M[2]+"-base","crimson-base":M[0]+"-base","junsplash-wash":M[1]+"-wash"};
-  for(const t of["ink","paper","rule","amber-base","amber-wash","qingbai-wash","ru-wash","longquan-wash","jun-base","crimson-base","junsplash-wash","gold-accent","gold-wash","gold-base","rust-base","rust-accent"]){
+  for(const t of["ink","paper","rule","amber-base","amber-wash","qingbai-wash","ru-wash","longquan-wash","qingbai-base","ru-base","longquan-base","jun-base","crimson-base","junsplash-wash","gold-accent","gold-wash","gold-base","rust-base","rust-accent"]){
     let v=rgb(cs.getPropertyValue("--"+(as[t]||t)));if(!/\d/.test(v))v=rgb(/wash|paper/.test(t)?bs.backgroundColor:bs.color);
     col["--"+t]=v;col["--"+t+"#"]=v.match(/\d+/g).map(Number)}
   // things with colours of their own keep their daylight colours in either theme: white
@@ -133,9 +135,11 @@ function colours(){const cs=getComputedStyle(document.documentElement),bs=getCom
     const v=rgb(day(k||t));if(/\d/.test(v)){col["--"+t]=v;col["--"+t+"#"]=v.match(/\d+/g).map(Number)}else if(k){col["--"+t]=col["--"+k];col["--"+t+"#"]=col["--"+k+"#"]}}
   col.font="12px "+cs.getPropertyValue("--typewriter")}
 
-// The hole's dark, in every view: ink, three parts to one of the wash of its height.
-const pitOf=()=>{const z=f(hole.c[0],hole.c[1]),bk=C(["qingbai-wash#","ru-wash#","longquan-wash#"][max(0,min(2,fl(3*(z-lv[0])/(lv[1]-lv[0]+1e-9))))]),ik=C("ink#");
-  return bk.map((v,i)=>round((v+3*ik[i])/4))};
+// The hole, in every view: the glaze of the floor's third where it is, deeper than the floor
+// round it -- by day that glaze's base; by night, when the washes are dark and the bases
+// light, its wash two thirds of the way to the paper.
+const pitOf=()=>{const j=max(0,min(2,fl(3*(f(hole.c[0],hole.c[1])-lv[0])/(lv[1]-lv[0]+1e-9)))),nm=["qingbai","ru","longquan"][j],pa=C("paper#");
+  return pa[0]+pa[1]+pa[2]>382?C(nm+"-base#").slice():C(nm+"-wash#").map((v,i)=>round(v+(pa[i]-v)*2/3))};
 // The plan's floor: three washes, low to high, each a third of its heights, and ink
 // contours. The elevations keep the same thirds (lv), so a colour is a height in both.
 function paint(){const N=min(round(W*dpr),900),o=document.createElement("canvas"),hs=new Float32Array(N*N);let lo=1,hi=-1;
@@ -252,7 +256,7 @@ function elevation(p,plane,e,X,Y,w,tag){const s=w/2.8,cx=X+w/2,leg=.6*s,lw=.085*
   // plate, just after its plate; what is down the hole, just after the hole's own section
   const lies=b=>{if(!b.R&&b.k!=3)for(const o of balls)if(o.k==3){const t=toF(o.M,sub(b.x,o.x));if(hypot(t[0],t[1])<PR&&t[2]>0)return o}},
     down=b=>hole&&b!==hole&&!b.R&&over(b.x)&&b.x[2]<f(hole.c[0],hole.c[1]),
-    key=([r,b])=>{const o=b&&lies(b);return o?deep(o.x)-.001:b&&down(b)?deep(hole.c)-.0005:deep(r)};
+    key=([r,b])=>{const o=b&&b!==hole&&lies(b);return o?deep(o.x)-.001:b&&down(b)?deep(hole.c)-.0005:deep(r)};
   for(const[r,b]of[...p.map(r=>[r]),...(hole?[[[...hole.c,0],hole]]:[]),...[...balls.map(b=>[b.x,b]),...pools.map(q=>[pw(q,0,0),q])]
       .filter(([r,b])=>abs(r[0]*e[0]+r[1]*e[1])<1.42+(b.R||bound(b)))].sort((i,j)=>key(j)-key(i))){
     const dk=deep(r),near=[];

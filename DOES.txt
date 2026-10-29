@@ -186,22 +186,26 @@ What itsthefloor.fyi does. A golf pass must keep every line true.
     edge -- what lies on the top is hidden by it. The room goes on past the plan's
     square, and far things fade into the paper, from 80 cm off to 1.6 m, so its
     edge is never seen; a body nearing the plan's edge, where it leaves the world,
-    fades away over its last 5 cm. The hole is dark, as the plan has it, and what
+    fades away over its last 5 cm. The hole is as the plan has it, and what
     is down it is seen through it. Far things are drawn before near ones, so a hill
     hides what is behind it, and each body after the floor it stands on. Dragging
     sideways turns the table; a click lays a marble where the eye's ray meets the floor,
     or, meeting the underside, on the top above that point. Without script there is no
     button.
-19. A hole in the floor: a golf cup, 10.8 cm across and 10.2 cm deep, its bottom
+19. A hole in the floor, 5 cm across -- room for a meatball, or an egg on its side
+    -- and 7 cm deep, so even an egg on its end goes all the way down; its bottom
     level, its wall straight down from the floor's edge round it. Each floor has its
     own, chosen with it: somewhere on a slope of at least 3 in 100, so never in a
     hollow, beyond where the legs can stand, inside the plan. It is a hole and not a
     mark: the floor is not there, and its edge is met where it is nearest. A marble
-    whose touch crosses onto it is turned in by the edge and drops (40 mm off its
-    middle, turned 44 degrees; 52 mm off, 66); one whose touch stays on the floor
-    goes by; rolling straight at it, one at 1.2 m/s drops in and one at 2.4 m/s hops
-    it. The wall and the bottom hold what is down it, and it can fill. Marbles, eggs and meatballs fit; a plate rests across it on its foot.
-    White flowing to its edge pours in and is gone. In the plan it is dark, with
-    what is in it seen from above; in the elevations it has its own section, cut
-    straight down to its bottom, dark, with what is in it; from a leg, item 18.
-    Whatever has gone all the way below the floor there is counted, once (item 9).
+    whose touch crosses onto it is drawn in by the edge and drops (one rolling at
+    0.24 m/s, 22.5 mm off its middle, does); one whose touch stays on the floor goes
+    by; rolling straight at it, one at 0.8 m/s drops in and one at 1.2 m/s hops it.
+    The wall and the bottom hold what is down it, and it can fill. A plate rests
+    across it on its foot. White flowing to its edge pours in and is gone. It is the
+    glaze of the floor's third where it is, deeper than the floor round it: by day
+    that glaze's base; by night its wash two thirds of the way to the paper. In the
+    plan it is so, with what is in it seen from above; in the elevations it has its
+    own section, cut straight down to its bottom, so, with what is in it; from a leg,
+    item 18. Whatever has gone all the way below the floor there is counted, once
+    (item 9).
