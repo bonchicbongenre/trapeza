@@ -14,8 +14,11 @@ What itsthefloor.fyi does. A golf pass must keep every line true.
     floor and holds the centre. With two such triangles it rocks between them as a
     leaned-on table does: smoothly, lingering a little at each rest. The page's
     clock runs at five sixths of real time, so everything happens as it would, a
-    little slower: about 2.3 s there and back, a fall from the table about 0.28 s. With reduced motion it rests on the first. No foot ever goes
-    below the floor.
+    little slower: about 2.3 s there and back, a fall from the table about 0.28 s.
+    With reduced motion it rests on the first. No foot ever goes below the floor.
+    Motion, the turn's easing with it, is worked in fixed steps of 1/240 s of the
+    page's clock, so it is the same at any frame rate; when nothing moves, the
+    page draws nothing until something does.
  6. From above, the top is shaded by its tilt: a light wash on the high side,
     darker and more opaque toward the low side, deeper with steeper tilt, never
     opaque. A foot is filled when it touches, hollow when it is more than 0.004
@@ -25,13 +28,15 @@ What itsthefloor.fyi does. A golf pass must keep every line true.
     section at every foot's depth, back to front, each foot on its own ground; the
     legs as square posts perpendicular to the top, leaning with its tilt, the foot's
     bottom showing when the table tips away; the top as an opaque slab showing its
-    top or its underside, whichever faces the camera. Grounds, legs and marbles are
-    drawn back to front, and each is hidden by exactly the part of the slab nearer
-    the camera than it, so nothing appears or vanishes except by moving. Heights are
-    drawn at twice their size, and the table is one rigid piece in that drawing. The ground slices belong to the feet, so the floor
+    top or its underside, whichever faces the camera, shaded along its tilt by the
+    plan's own ramp, the sides and underside a little deeper. Grounds, legs and
+    marbles are drawn back to front, and each is hidden by exactly the part of the
+    slab nearer the camera than it, so nothing appears or vanishes except by
+    moving. Heights are drawn at twice their size, and the table is one rigid
+    piece in that drawing. The ground slices belong to the feet, so the floor
     holds still; a marble on the floor carries a short line of its own ground. Each
     ground is in the plan's three washes, banded at the same heights, so a colour
-    is a height in every view.
+    is a height in every view, as the top's shade is.
  8. A screen reader hears "It is still.", "It rocks.", "One foot is in the air."
     or "N feet are in the air."
  9. The label gives the page's own size, read live, and one line: "Turn it." The

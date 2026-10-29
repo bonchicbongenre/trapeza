@@ -59,7 +59,10 @@ a{color:var(--amber-accent);text-underline-offset:.15em}
 const{PI:P,sin,cos,abs,hypot,min,max,round,exp,sqrt,pow,atan2,random}=Math,fl=Math.floor,
   $=i=>document.getElementById(i),c=$("c"),x=c.getContext("2d"),col={},C=k=>col["--"+k],
   calm=matchMedia("(prefers-reduced-motion: reduce)").matches;
-let n=4,th=0,to=0,drag=null,press=null,f,W,E,CW,CH,wide,dpr,map,said,balls=[],last=0,gone=0,old,t0,lv=[0,1];
+let n=4,th=0,to=0,drag=null,press=null,f,W,E,CW,CH,wide,dpr,map,said,balls=[],gone=0,old,t0,lv=[0,1],
+  sim=null,asleep=false;
+// the world's step, in milliseconds of the page's clock
+const STEP=1000/240;
 
 // Floors. Each is continuous, which is all the theorem asks of a floor.
 const rnd=a=>(random()*2-1)*a,
@@ -72,7 +75,7 @@ const rnd=a=>(random()*2-1)*a,
     ()=>{const g=gauss(3,.015,[.3,.4]),u0=rnd(.8),v0=rnd(.8),a=.06+random()*.06;
       return(u,v)=>{const p=u-u0,q=v-v0;return a*exp(-(p*p+q*q)/1.6)+g(u,v)}},
     ()=>{const a=rnd(.05),b=rnd(.05),g=gauss(3,.03,[.3,.4]);return(u,v)=>a*u*v+b*(u*u-v*v)+g(u,v)}],
-  another=()=>{f=kinds[fl(random()*kinds.length)]();if(W)paint()},
+  another=()=>{f=kinds[fl(random()*kinds.length)]();if(W)paint();wake()},
   feet=a=>Array.from({length:n},(_,k)=>{const q=a+P/2+2*P*k/n;return[cos(q),sin(q)]}),
   trace=(t,pts)=>pts.forEach((q,i)=>t[i?"lineTo":"moveTo"](q[0],q[1]));
 
@@ -133,6 +136,21 @@ function hull(pts){pts.sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
     half=list=>{const out=[];for(const q of list){while(out.length>1&&cr(out[out.length-2],out[out.length-1],q)<=0)out.pop();out.push(q)}return out.slice(0,-1)};
   return half(pts).concat(half(pts.slice().reverse()))}
 
+// The top's colour, one function for every view: along its tilt u, a light wash on the
+// high side, deeper and more opaque toward the low side, deeper with steeper tilt.
+function tone(plane){const g=hypot(plane[0],plane[1]);
+  return{u:g>1e-9?[plane[0]/g,plane[1]/g]:[1,0],hi:[...C("amber-wash#"),.45],lo:[...C("amber-base#"),.3+min(.45,g*12)]}}
+// A flat piece of the table seen from the side, painted as the plan paints the top: from
+// where three of its points fall and the ramp's value at each (0 high, 1 low), the canvas
+// gradient that gives every point its plan colour, over the paper, `deeper` more opaque.
+function ramp(P,Q,R,sp,sq,sr,T,deeper){const paper=C("paper#"),
+    over=c=>"rgb("+paper.map((v,i)=>round(v*(1-min(1,c[3]+deeper))+c[i]*min(1,c[3]+deeper)))+")",
+    ax=Q[0]-P[0],ay=Q[1]-P[1],bx=R[0]-P[0],by=R[1]-P[1],det=ax*by-ay*bx;
+  if(abs(det)<1e-9)return over(T.hi);
+  const dq=sq-sp,dr=sr-sp,gx=(dq*by-dr*ay)/det,gy=(ax*dr-bx*dq)/det,g2=gx*gx+gy*gy||1e-18,
+    gr=x.createLinearGradient(P[0]-gx*sp/g2,P[1]-gy*sp/g2,P[0]+gx*(1-sp)/g2,P[1]+gy*(1-sp)/g2);
+  gr.addColorStop(0,over(T.hi));gr.addColorStop(1,over(T.lo));return gr}
+
 // An elevation: a camera on the table's own axis, so it turns with the table. The
 // drawing runs along e; the camera looks along d from its far side, within its frame.
 // All is projected from where it is: the top a slab, drawn first; then back to front
@@ -156,12 +174,19 @@ function elevation(p,plane,e,X,Y,w,tag){const s=w/2.8,cx=X+w/2,leg=.6*s,lw=.085*
     V=p.map(r=>[r[0]*1.12,r[1]*1.12]),seen=q=>hull(q.flatMap(r=>[up(r,leg),up(r,leg+.07*s)]));
   x.save();frame();x.clip();
   x.lineCap=x.lineJoin="round";
-  // The slab is opaque: its sides a darker band, and of its two faces only the one the
-  // camera can see -- the top when the table tips toward this camera, else the underside.
-  const rise=kd>0,face=V.map(r=>up(r,leg+(rise?.07*s:0))),
+  // The slab is opaque, and painted as the plan paints the top: each point the colour the
+  // plan gives it, by its place along the tilt, so a profile shows which way is up as the
+  // plan does. Of its two faces only the one the camera can see -- the top when the table
+  // tips toward this camera, else the underside, a step deeper in shade, as are its sides.
+  const rise=kd>0,hf=leg+(rise?.07*s:0),face=V.map(r=>up(r,hf)),T=tone(plane),
+    sv=r=>(1-(r[0]*T.u[0]+r[1]*T.u[1])/1.12)/2,
     mix=a=>"rgb("+C("amber-base#").map((v,i)=>round(C("paper#")[i]*(1-a)+v*a))+")",
-    slab=()=>{x.beginPath();trace(x,seen(V));x.closePath();x.fillStyle=mix(.3);x.fill();x.lineWidth=1.2;x.strokeStyle=C("amber-base");x.stroke();
-      x.beginPath();trace(x,face);x.closePath();x.fillStyle=rise?C("amber-wash"):mix(.6);x.fill();x.lineWidth=1;x.stroke()},
+    slab=()=>{V.forEach((A,i)=>{const B=V[(i+1)%V.length];if((B[1]-A[1])*d[0]-(B[0]-A[0])*d[1]>=0)return;
+        const q=[up(A,leg),up(B,leg),up(B,leg+.07*s),up(A,leg+.07*s)];
+        x.beginPath();trace(x,q);x.closePath();x.fillStyle=ramp(q[0],q[1],q[3],sv(A),sv(B),sv(A),T,.25);x.fill()});
+      x.beginPath();trace(x,seen(V));x.closePath();x.lineWidth=1.2;x.strokeStyle=C("amber-base");x.stroke();
+      x.beginPath();trace(x,face);x.closePath();
+      x.fillStyle=ramp(up([0,0],hf),up([1,0],hf),up([0,1],hf),.5,sv([1,0]),sv([0,1]),T,rise?0:.25);x.fill();x.lineWidth=1;x.stroke()},
     // a leg: a square post from its foot up to the underside. A foot on the floor sits
     // flush on its own ground; a foot in the air keeps its square end, and with the
     // table tipped away from the camera that end shows, in the underside's shade.
@@ -218,8 +243,8 @@ function onTop(u,v){for(let k=0;k<n;k++){const a=P/2+2*P*(k+.5)/n;if(u*cos(a)+v*
 // drop a marble at a point of the room: onto the top if it is there, else the floor
 function drop(u,v){const cs=cos(th),sn=sin(th),lu=u*cs+v*sn,lv=v*cs-u*sn;
   if(onTop(lu,lv))balls.push({on:0,u:lu,v:lv,vu:0,vv:0});
-  else if(abs(u)<=1.6&&abs(v)<=1.6)balls.push({on:2,u,v,vu:0,vv:0})}
-function roll(now,plane){const dt=min(.05,(now-last)/1000),g=24.5*5/7,cs=cos(th),sn=sin(th),
+  else if(abs(u)<=1.6&&abs(v)<=1.6)balls.push({on:2,u,v,vu:0,vv:0});wake()}
+function roll(dt,plane){const g=24.5*5/7,cs=cos(th),sn=sin(th),
     // rolling resistance, half a percent of gravity (glass on wood): a steady drag on
     // a rolling marble, and a hold on a resting one until the slope beats it
     drag=(b,au,av,damp)=>{const sp=hypot(b.vu,b.vv),R=.12,A=hypot(au,av);
@@ -250,26 +275,31 @@ function camera(e,o,s,tag){const d=[-e[1],e[0]];
   x.moveTo(o-1.36*d[0]*s,o+1.36*d[1]*s);x.lineTo(o-1.18*d[0]*s,o+1.18*d[1]*s);x.stroke();
   x.fillText(tag,o-1.47*d[0]*s-3,o+1.47*d[1]*s+4)}
 
+// How the table stands at a moment t, for its present turn: its feet over the floor, the
+// triangles it can rest on, and the plane of its feet as someone leans on it -- it eases
+// onto its other triangle, lingers, and eases back.
+function stand(t){const p=feet(th),h=p.map(r=>f(r[0],r[1])),R=rests(p,h),a=R[0],b=R[R.length>1?1:0],
+    q=(1-cos(2*P*t/1900))/2,k=calm||R.length<2?0:q*q*q*(q*(6*q-15)+10);
+  return{p,h,R,a,b,plane:[0,1,2].map(i=>a[i]+(b[i]-a[i])*k)}}
+
 function draw(wall){
-  // the page's clock runs at five sixths: everything as it would be, slow enough to follow
+  // The page's clock runs at five sixths: everything as it would be, slow enough to follow.
+  // The world moves in fixed steps of that clock, whatever the screen's rate: each step
+  // eases the turn, finds how the table stands, and moves the marbles; a frame only draws.
   const now=wall*5/6;
-  th+=(to-th)*.22;
-  const p=feet(th),h=p.map(r=>f(r[0],r[1])),R=rests(p,h),
-    // someone leans on it: it eases onto its other triangle, lingers, and eases back
-    q=(1-cos(2*P*now/1900))/2,t=calm||R.length<2?0:q*q*q*(q*(6*q-15)+10),
-    a=R[0],b=R[R.length>1?1:0],plane=[0,1,2].map(i=>a[i]+(b[i]-a[i])*t),
+  if(sim==null||now-sim>200)sim=now;
+  while(sim+STEP<=now){sim+=STEP;th=to+(th-to)*exp(-STEP/56);roll(STEP/1000,stand(sim).plane)}
+  const{p,h,R,a,b,plane}=stand(sim),
     gap=p.map((r,m)=>max(a[0]*r[0]+a[1]*r[1]+a[2],b[0]*r[0]+b[1]*r[1]+b[2])-h[m]),
-    up=gap.filter(v=>v>.004).length,s=W/3.2,o=W/2,K=1.12*s,top=new Path2D(),g=hypot(plane[0],plane[1]),
-    ux=g>1e-9?plane[0]/g:1,uy=g>1e-9?plane[1]/g:0,ea=[-sin(th),cos(th)],eb=[cos(th),sin(th)],
+    up=gap.filter(v=>v>.004).length,s=W/3.2,o=W/2,K=1.12*s,top=new Path2D(),T=tone(plane),
+    ea=[-sin(th),cos(th)],eb=[cos(th),sin(th)],
     marbles=on=>{for(const b of balls)if(!b.on==on){const r=at(b);dot(o+r[0]*s,o-r[1]*s,max(2.5,RAD*s),b)}};
-  roll(now,plane);last=now;
   x.setTransform(dpr,0,0,dpr,0,0);x.clearRect(0,0,CW,CH);x.drawImage(map,0,0,W,W);
   marbles(false);
-  // the top from above, shaded by its tilt: a light wash high, darker toward the low side
+  // the top from above, in its tone: translucent over the floor
   trace(top,p.map(r=>[o+r[0]*s*1.12,o-r[1]*s*1.12]));top.closePath();
-  const gr=x.createLinearGradient(o+ux*K,o-uy*K,o-ux*K,o+uy*K);
-  gr.addColorStop(0,"rgba("+C("amber-wash#")+",.45)");
-  gr.addColorStop(1,"rgba("+C("amber-base#")+","+(.3+min(.45,g*12)).toFixed(3)+")");
+  const gr=x.createLinearGradient(o+T.u[0]*K,o-T.u[1]*K,o-T.u[0]*K,o+T.u[1]*K);
+  gr.addColorStop(0,"rgba("+T.hi+")");gr.addColorStop(1,"rgba("+T.lo.slice(0,3)+","+T.lo[3].toFixed(3)+")");
   x.fillStyle=gr;x.fill(top);x.strokeStyle=C("amber-base");x.lineWidth=1.5;x.stroke(top);
   p.forEach((r,m)=>{x.beginPath();x.arc(o+r[0]*s,o-r[1]*s,5.5,0,7);x.fillStyle=gap[m]>.004?C("paper"):C("amber-base");x.fill();x.stroke()});
   marbles(true);
@@ -284,25 +314,29 @@ function draw(wall){
   // a change of theme: the drawing as it was, laid over the new one and let go
   if(old){const k=(wall-t0)/500;if(k>=1||old.width!=c.width||old.height!=c.height)old=null;
     else{x.setTransform(1,0,0,1,0,0);x.globalAlpha=1-ease(k);x.drawImage(old,0,0);x.globalAlpha=1}}
-  requestAnimationFrame(draw)}
+  // when nothing moves -- no lean, no turn, no marble, no fade -- the page rests, and draws
+  // nothing, until something wakes it
+  if(drag!==null||abs(to-th)>1e-4||R.length>1&&!calm||old||balls.some(b=>b.on==1||b.vu||b.vv))requestAnimationFrame(draw);
+  else asleep=true}
+function wake(){if(asleep){asleep=false;requestAnimationFrame(draw)}}
 // the curve the page's own colours fade along, CSS's "ease": cubic-bezier(.25,.1,.25,1)
 function ease(k){let a=0,b=1,s;for(let i=0;i<20;i++){s=(a+b)/2;.75*s*(1-s)+s*s*s<k?a=s:b=s}return s*(.3*(1-s)*(1-s)+3*s*(1-s)+s*s)}
 
 const ang=e=>{const r=c.getBoundingClientRect();return atan2(r.top+W/2-e.clientY,e.clientX-r.left-W/2)},
   legs=document.querySelectorAll("#legs button");
-c.onpointerdown=e=>{drag=ang(e);press=[e.clientX,e.clientY,e.timeStamp];c.setPointerCapture(e.pointerId)};
+c.onpointerdown=e=>{drag=ang(e);press=[e.clientX,e.clientY,e.timeStamp];c.setPointerCapture(e.pointerId);wake()};
 c.onpointermove=e=>{if(drag===null)return;const a=ang(e),d=a-drag;to+=(d+3*P)%(2*P)-P;drag=a};
 // a click (barely moved, quickly let go) on the plan drops a marble just there
 c.onpointerup=e=>{const r=c.getBoundingClientRect(),X=e.clientX-r.left,Y=e.clientY-r.top;
   if(press&&hypot(e.clientX-press[0],e.clientY-press[1])<5&&e.timeStamp-press[2]<400&&X<W&&Y<W)drop((X-W/2)/(W/3.2),(W/2-Y)/(W/3.2));
   drag=press=null};
 c.onpointercancel=()=>{drag=press=null};
-c.onkeydown=e=>{const r={ArrowLeft:1,ArrowUp:1,ArrowRight:-1,ArrowDown:-1}[e.key];if(r){to+=r*P/360;e.preventDefault()}};
-legs.forEach(btn=>btn.onclick=()=>{n=+btn.textContent;legs.forEach(o=>o.setAttribute("aria-pressed",o===btn))});
+c.onkeydown=e=>{const r={ArrowLeft:1,ArrowUp:1,ArrowRight:-1,ArrowDown:-1}[e.key];if(r){to+=r*P/360;e.preventDefault();wake()}};
+legs.forEach(btn=>btn.onclick=()=>{n=+btn.textContent;legs.forEach(o=>o.setAttribute("aria-pressed",o===btn));wake()});
 $("again").onclick=another;
 // the button drops one somewhere on the top
-$("marble").onclick=()=>{const a=random()*2*P,r=sqrt(random())*.9*1.12*cos(P/n);balls.push({on:0,u:r*cos(a),v:r*sin(a),vu:0,vv:0})};
-addEventListener("resize",size);
+$("marble").onclick=()=>{const a=random()*2*P,r=sqrt(random())*.9*1.12*cos(P/n);balls.push({on:0,u:r*cos(a),v:r*sin(a),vu:0,vv:0});wake()};
+addEventListener("resize",()=>{size();wake()});
 another();size();requestAnimationFrame(draw);
 
 // theme: the system's, until the visitor turns it; nothing is kept. It fades over half
@@ -310,7 +344,7 @@ another();size();requestAnimationFrame(draw);
 const sys=matchMedia("(prefers-color-scheme: dark)"),T=$("theme");let theme;
 const dark=()=>theme?theme=="dark":sys.matches,turn=()=>T.textContent=dark()?"light":"dark",
   recolour=()=>{old=document.createElement("canvas");old.width=c.width;old.height=c.height;
-    old.getContext("2d").drawImage(c,0,0);t0=performance.now();colours();paint()};
+    old.getContext("2d").drawImage(c,0,0);t0=performance.now();colours();paint();wake()};
 sys.addEventListener("change",()=>{if(!theme){turn();recolour()}});
 T.onclick=()=>{document.documentElement.dataset.theme=theme=dark()?"light":"dark";turn();recolour()};
 turn();T.hidden=false;
