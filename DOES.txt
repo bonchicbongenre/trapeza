@@ -45,9 +45,13 @@ What itsthefloor.fyi does. A golf pass must keep every line true.
     is one rigid piece in that drawing. A body keeps its true size and shape: it
     is drawn from the point it rests on, by the floor's map or the table's (between
     them in the air, as it is between them), turned by the difference between the
-    drawn slope there and the true one, so it sits on the drawn surface as it sits
-    on the true one. The ground slices belong to the feet, so the floor holds
-    still; a body on the floor carries a short line of its own ground. Each
+    drawn slope there and the true one, and each of its points raised with depth as
+    the drawn surface under it rises toward the camera, so it sits on the drawn
+    surface as it sits on the true one (a plate on a tipped top, on its face, not
+    into it). The ground slices belong to the feet, so the floor holds
+    still; a body off the table carries a short section of its own ground, filled
+    as a foot's is and hidden as it is by what is nearer, so nothing stands on air,
+    nearer the camera than any foot or not; so does the white on the floor. Each
     ground is in the plan's three washes, banded at the same heights, so a colour
     is a height in every view, as the top's shade is.
  8. A screen reader hears "It is still.", "It rocks.", "One foot is in the air."
@@ -70,9 +74,10 @@ What itsthefloor.fyi does. A golf pass must keep every line true.
 11. Marbles, at true size: glass spheres 16 mm across, 5.4 g (a reach is taken
     as 40 cm). Clicking the plan lays one just there, on the top or the floor;
     "drop a marble" lays one somewhere on the top. Each lays one more, at rest,
-    just touching what it is laid on; where something already lies, at the
-    nearest clear place beside it, never under a plate's rim, and on the floor
-    clear of the legs and the top. One time in thirty it is an egg (item 16);
+    just touching what it is laid on: over a plate, on its spaghetti or its china,
+    come down onto from above to where it first touches; where something else
+    already lies, at the nearest clear place beside it, never under a plate's rim,
+    and on the floor clear of the legs and the top. One time in thirty it is an egg (item 16);
     one time in sixty, a plate of spaghetti (item 17).
 12. One world moves them all: rigid bodies in their true shapes under gravity,
     and, wherever two things touch (two bodies, a body and the floor, the top or
@@ -81,9 +86,12 @@ What itsthefloor.fyi does. A golf pass must keep every line true.
     0.6, china 0.5, egg 0.3, meatball 0.1, spaghetti 0.05; slower than 8 cm/s,
     nothing); Coulomb friction, the geometric mean of the two sides' (glass,
     wood and egg 0.4, china 0.35, meatball and spaghetti 0.6); rolling
-    resistance, the larger of the two sides' levers (0.056 mm, so a marble holds
-    still on a slope gentler than about 0.4 degrees; a meatball's 1.5 mm, 3 in
-    100); and the twist friction of the contact's patch. Contacts are found
+    resistance, the larger of the two sides' levers (a marble's or an egg's 0.056
+    mm, so a marble on the top's hard wood holds still on a slope gentler than
+    about 0.4 degrees; the floor's 0.12 mm, for it gives a little under what rolls
+    on it -- an estimate, between what a hard wood floor and a carpet measure -- so
+    on it about 0.9 degrees; a meatball's 1.5 mm, 3 in 100); and the twist
+    friction of the contact's patch. Contacts are found
     between the true shapes; the solver's rounds go on until they agree, at most
     ten, and forty where a plate presses on lighter things. Moving air drags
     on each body by its drag coefficient and frontal area. A marble rolls down a slope at five-sevenths of
@@ -162,9 +170,14 @@ What itsthefloor.fyi does. A golf pass must keep every line true.
     down, and turns and rocks with the table, so the table holds still and the world
     moves round it. In true perspective it sees the same things: the underside of the
     top, shaded along its tilt as every view shades the top; the floor in the plan's
-    washes and contours; the other legs, round, with their shadows; and everything
-    below the top or beyond its edge -- what lies on the top is hidden by it. Far
-    things are drawn before near ones, so a hill hides what is behind it. Dragging
+    washes, meeting along the heights where they change as in the plan, and its
+    contours, drawn finer where it is near, so no edge of it is coarse; the other
+    legs, round, with their shadows; and everything below the top or beyond its
+    edge -- what lies on the top is hidden by it. The room goes on past the plan's
+    square, and far things fade into the paper, from 80 cm off to 1.6 m, so its
+    edge is never seen; a body nearing the plan's edge, where it leaves the world,
+    fades away over its last 5 cm. Far things are drawn before near ones, so a hill
+    hides what is behind it, and each body after the floor it stands on. Dragging
     sideways turns the table; a click lays a marble where the eye's ray meets the floor,
     or, meeting the underside, on the top above that point. Without script there is no
     button.

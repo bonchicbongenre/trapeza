@@ -181,6 +181,15 @@ function elevation(p,plane,e,X,Y,w,tag){const s=w/2.8,cx=X+w/2,leg=.6*s,lw=.085*
     deep=r=>r[0]*d[0]+r[1]*d[1],rad=max(2,RAD*s),
     // the floor, drawn, at t across the view and z deep
     gy=(t,z)=>Y-f(t*e[0]+z*d[0],t*e[1]+z*d[1])*2*s,
+    // a section of the floor z deep, from a to b across the view: its ground filled down to
+    // the panel's foot in the plan's thirds, each at its heights, and its ridge in ink, which
+    // lives inside its own ground, so none of it shows past the green
+    cut=(a,b,z,iw)=>{const m=max(8,round((b-a)*20)),pts=[],g=new Path2D();
+      for(let i=0;i<=m;i++){const t=a+(b-a)*i/m;pts.push([cx+t*s,gy(t,z)])}
+      g.moveTo(cx+a*s,Y+.12*w);for(const q of pts)g.lineTo(q[0],q[1]);g.lineTo(cx+b*s,Y+.12*w);g.closePath();
+      x.fillStyle=C("qingbai-wash");x.fill(g);x.save();x.clip(g);
+      for(const j of[1,2]){const yk=Y-(lv[0]+(lv[1]-lv[0])*j/3)*2*s;x.fillStyle=C(j<2?"ru-wash":"longquan-wash");x.fillRect(X,Y-.6*w,w,max(0,yk-Y+.6*w))}
+      x.beginPath();trace(x,pts);x.lineWidth=iw;x.strokeStyle=C("ink");x.stroke();x.restore()},
     // a point of the world as this camera draws it: by the floor, its relief at twice its
     // size and heights over it as they are; by the table, as part of that rigid piece;
     // anywhere between, weighed by where between it is
@@ -219,7 +228,8 @@ function elevation(p,plane,e,X,Y,w,tag){const s=w/2.8,cx=X+w/2,leg=.6*s,lw=.085*
   slab();
   // the feet, the bodies and the pools in shot, back to front; what lies on a plate, just
   // after its plate
-  const key=([r,b])=>{if(b&&!b.R&&b.k!=3)for(const o of balls)if(o.k==3){const t=toF(o.M,sub(b.x,o.x));if(hypot(t[0],t[1])<PR&&t[2]>0)return deep(o.x)-.001}return deep(r)};
+  const lies=b=>{if(!b.R&&b.k!=3)for(const o of balls)if(o.k==3){const t=toF(o.M,sub(b.x,o.x));if(hypot(t[0],t[1])<PR&&t[2]>0)return o}},
+    key=([r,b])=>{const o=b&&lies(b);return o?deep(o.x)-.001:deep(r)};
   for(const[r,b]of[...p.map(r=>[r]),...[...balls.map(b=>[b.x,b]),...pools.map(q=>[pw(q,0,0),q])]
       .filter(([r,b])=>abs(r[0]*e[0]+r[1]*e[1])<1.42+(b.R||bound(b)))].sort((i,j)=>key(j)-key(i))){
     const dk=deep(r),near=[];
@@ -234,8 +244,8 @@ function elevation(p,plane,e,X,Y,w,tag){const s=w/2.8,cx=X+w/2,leg=.6*s,lw=.085*
     x.save();if(near.length){frame();trace(x,hull(near.flatMap(([r,g])=>[up(r,leg),up(r,leg+.07*s)]
       .flatMap(([a,b])=>[[a-g,b-g],[a+g,b-g],[a+g,b+g],[a-g,b+g]]))));x.clip("evenodd")}
     // a body: its lowest point drawn where the world's map puts it, the body round it at
-    // its true size; on the floor it carries only a short line of its own ground, so the
-    // floor stays still
+    // its true size; off the table it carries a short section of its own ground, so it never
+    // stands on air, and the floor's sections stay the feet's, so the floor stays still
     const tm=r[0]*e[0]+r[1]*e[1],line=(a,b)=>{x.beginPath();for(let i=0;i<=8;i++){const t=a+(b-a)*i/8;x[i?"lineTo":"moveTo"](cx+t*s,gy(t,dk))}
       x.lineWidth=1.5;x.strokeStyle=C("ink");x.stroke()};
     // Drawn slopes are twice the true ones, so a body is turned by the difference about the
@@ -244,15 +254,18 @@ function elevation(p,plane,e,X,Y,w,tag){const s=w/2.8,cx=X+w/2,leg=.6*s,lw=.085*
     if(b&&!b.R){const L=surf(b,[0,0,-1]),u=(X,w)=>{const z=f(X[0],X[1]);return max(0,min(1,(X[2]-z)/(topZ(X)-z)))},w=u(L),
         sl=f.g(L[0],L[1]),nf=unit([-sl[1],-sl[2],1]),m=unit(add(mul(nf,1-w),mul(tp.M[2],w))),
         S=surf(b,mul(m,-1)),A=mid(S,u(S)),k=-(m[0]*e[0]+m[1]*e[1])/m[2],r=atan2(k,1)-atan2(2*k,1),cr=cos(r),sr=sin(r),
-        pt=X=>{const a=((X[0]-S[0])*e[0]+(X[1]-S[1])*e[1])*s,c=-(X[2]-S[2])*s;return[A[0]+a*cr-c*sr,A[1]+a*sr+c*cr]};
-      if(b.fl)line(tm-bound(b)-.04,tm+bound(b)+.04);
+        // and toward the camera, where the drawing turns nothing, each point of it rises with
+        // depth as the drawn surface under it does: by its slope that way once more
+        kz=-(m[0]*d[0]+m[1]*d[1])/m[2],
+        pt=X=>{const a=((X[0]-S[0])*e[0]+(X[1]-S[1])*e[1])*s,c=-(X[2]-S[2]+kz*((X[0]-S[0])*d[0]+(X[1]-S[1])*d[1]))*s;return[A[0]+a*cr-c*sr,A[1]+a*sr+c*cr]};
+      if(b.off&&!lies(b))cut(tm-bound(b)-.04,tm+bound(b)+.04,dk,1.5);
       if(b.k)body(b,[d[0],d[1],0],pt);else{const c=pt(b.x),g=rad/(hypot(c[0]-A[0],c[1]-A[1])||1);dot(A[0]+(c[0]-A[0])*g,A[1]+(c[1]-A[1])*g,rad,b)}}
-    // a film of white: across the eye, its deepest at each place, laid on its own ground, in
-    // its true depth; the yolk a dome; the bits of shell where they ride
+    // a film of white: across the eye, its deepest at each place, laid on a section of its
+    // own ground, in its true depth; the yolk a dome; the bits of shell where they ride
     else if(b&&b.h){const N=FN,bins=new Map();
       for(let a=0;a<N*N;a++)if(b.h[a]>.00025){const p=cell(b,a%N,fl(a/N)),t=round((p[0]*e[0]+p[1]*e[1])/FX);bins.set(t,max(bins.get(t)||0,b.h[a]))}
       const ks=[...bins.keys()].sort((p,q)=>p-q);
-      if(ks.length){line(ks[0]*FX-.03,ks[ks.length-1]*FX+.03);
+      if(ks.length){cut(ks[0]*FX-.03,ks[ks.length-1]*FX+.03,dk,1.5);
         for(let i=0;i<ks.length;){let j=i;while(j+1<ks.length&&ks[j+1]==ks[j]+1)j++;const run=ks.slice(i,j+1);i=j+1;
           x.beginPath();for(const c of run){const t=c*FX;x.lineTo(cx+t*s,gy(t,dk)-max(.6,bins.get(c)*s))}
           for(const c of run.reverse()){const t=c*FX;x.lineTo(cx+t*s,gy(t,dk))}
@@ -271,17 +284,7 @@ function elevation(p,plane,e,X,Y,w,tag){const s=w/2.8,cx=X+w/2,leg=.6*s,lw=.085*
       x.beginPath();x.ellipse(yk[0],yk[1]-w/2,.04*s*g,.03*s*g,0,P,2*P);x.closePath();x.fillStyle=C("gold-accent");x.fill();x.strokeStyle=C("food-ink");x.stroke();
       x.lineWidth=2;x.strokeStyle=C(b.glaze?"crimson-base":"jun-base");
       for(const c of b.bits){const t=tm+(c[0]*e[0]+c[1]*e[1])*g,q=on(t-.012),u=on(t+.012);x.beginPath();x.moveTo(q[0],q[1]-1);x.lineTo(u[0],u[1]-1);x.stroke()}}
-    else{if(!done[dk.toFixed(3)]){done[dk.toFixed(3)]=1;
-        const line=[],ground=new Path2D();
-        for(let i=0;i<=56;i++){const t=-1.4+2.8*i/56;line.push([cx+t*s,gy(t,dk)])}
-        ground.moveTo(X,Y+.12*w);for(const q of line)ground.lineTo(q[0],q[1]);
-        ground.lineTo(X+w,Y+.12*w);ground.closePath();x.fillStyle=C("qingbai-wash");x.fill(ground);
-        // the plan's thirds, drawn at their heights: above the first the middle wash, above
-        // the second the high one
-        x.save();x.clip(ground);for(const k of[1,2]){const yk=Y-(lv[0]+(lv[1]-lv[0])*k/3)*2*s;
-          x.fillStyle=C(k<2?"ru-wash":"longquan-wash");x.fillRect(X,Y-.6*w,w,max(0,yk-Y+.6*w))}x.restore();
-        // the ridge line lives inside its own ground, so none of it shows past the green
-        x.save();x.clip(ground);x.beginPath();trace(x,line);x.lineWidth=2;x.strokeStyle=C("ink");x.stroke();x.restore()}
+    else{if(!done[dk.toFixed(3)]){done[dk.toFixed(3)]=1;cut(-1.4,1.4,dk,2)}
       // the foot's shadow on the floor, as the plan has it, seen nearly edge-on: a soft
       // darkening of the ground just under it, darkest where it stands
       const g=max(0,plane[0]*r[0]+plane[1]*r[1]+plane[2]-f(r[0],r[1])),R=(.09+3*g)*s,F=[px(r),gy(tm,dk)],ink=C("ink#").join(","),
@@ -296,10 +299,10 @@ function elevation(p,plane,e,X,Y,w,tag){const s=w/2.8,cx=X+w/2,leg=.6*s,lw=.085*
 // 24.5 reaches a second squared. Marbles and eggs are rigid bodies in their true shapes,
 // under one set of laws: gravity, and wherever two things touch -- two bodies, a body and
 // the floor, the top or a leg -- a push that keeps them from passing into each other and
-// gives back a fixed part of the speed they met at; Coulomb friction, 0.4 for every pair;
-// rolling resistance, the push's lever 0.056 mm, so that a marble on wood holds still on a
-// slope gentler than about 0.4 degrees; and the twist friction of the contact's small
-// patch. A meeting slower than 8 cm/s does not bounce: the bounce would rise less than a
+// gives back a fixed part of the speed they met at; Coulomb friction; rolling resistance,
+// the push's lever 0.056 mm, so that a marble on the top's wood holds still on a slope
+// gentler than about 0.4 degrees, and on the floor, which gives a little more, 0.12 mm and
+// 0.9 degrees; and the twist friction of the contact's small patch. A meeting slower than 8 cm/s does not bounce: the bounce would rise less than a
 // third of a millimetre. The table is driven, turned by hand and rocked as if leaned on,
 // and far heavier than anything on it.
 const G=24.5,RAD=.02,MU=.4,RR=.00014,VT=.2,
@@ -469,7 +472,11 @@ function solve(A,r){const k=r.length,M=A.map((row,i)=>[...row,r[i]]),s=max(1e-30
 // time beginning where the body's last left off on that surface (key); the body's point
 // nearest; the gap. The floor is such a surface in the room's frame; the top of a plate of
 // spaghetti in the plate's.
-const I3=[[1,0,0],[0,1,0],[0,0,1]],WOOD={e:.6,mu:.4};
+// The top is hard wood; the floor gives a little under what rolls on it, and a rolling
+// thing loses most where the softer side gives: its lever 0.12 mm (an estimate -- rolling
+// on a hard wood floor measures 0.005 to 0.008 of a radius, on a carpet 0.013 to 0.047;
+// this is 0.015 of a marble's).
+const I3=[[1,0,0],[0,1,0],[0,0,1]],WOOD={e:.6,mu:.4},FLOOR={e:.6,mu:.4,rr:.0003};
 function field(b,O,M,F,key){const fm=b.fm||(b.fm={});let m=fm[key]||[0,0,1],p,s,q;
   for(let i=0;i<4;i++){s=surf(b,toW(M,mul(m,-1)));q=toF(M,sub(s,O));const g=F(q[0],q[1]),m1=unit([-g[1],-g[2],1]),c=len(sub(m1,m));
     p=[q[0],q[1],g[0]];m=m1;if(c<1e-7)break}
@@ -506,14 +513,14 @@ function pair(o,Pl,reach){const t=toF(Pl.M,sub(o.x,Pl.x)),a=hypot(t[0],t[1]),b=t
 // than nothing where pressed in); the bounce (the lesser of the two sides'), friction (their
 // geometric mean), the rolling and twist levers (the larger), how hard it is to move each
 // way there, the speed they meet at, and the last step's pushes there to begin from. The
-// other side's material is B's own, or mat's: wood for the floor and the table, the
-// spaghetti or the china of a plate.
+// other side's material is B's own, or mat's: the floor's, the table's wood, the spaghetti
+// or the china of a plate.
 function meet(A,B,n,pa,pb,d,V,W,key,mat,h){
   const ra=sub(pa,A.x),rb=B&&sub(pb,B.x),t1=unit(crs(n,abs(n[0])<.6?[1,0,0]:[0,1,0])),t2=crs(n,t1),o_=mat||B,
     kl=(u,v)=>dot3(u,v)*(1/A.m+(B?1/B.m:0))+dot3(crs(ra,u),inv(A,crs(ra,v)))+(B?dot3(crs(rb,u),inv(B,crs(rb,v))):0),
     ka=(u,v)=>dot3(u,inv(A,v))+(B?dot3(u,inv(B,v)):0),
     i2=(a,b,c,d)=>{const q=a*d-b*c;return[d/q,-b/q,-c/q,a/q]},
-    c={A,B,n,ra,rb,d,V,W,h,key,t1,t2,e:min(A.e,o_.e),mu:sqrt(A.mu*o_.mu),rr:max(A.rr,B?B.rr:0),tw:max(A.tw,B?B.tw:0),kn:1/kl(n,n),
+    c={A,B,n,ra,rb,d,V,W,h,key,t1,t2,e:min(A.e,o_.e),mu:sqrt(A.mu*o_.mu),rr:max(A.rr,B?B.rr:0,mat&&mat.rr||0),tw:max(A.tw,B?B.tw:0),kn:1/kl(n,n),
       kt:i2(kl(t1,t1),kl(t1,t2),kl(t2,t1),kl(t2,t2)),kr:i2(ka(t1,t1),ka(t1,t2),ka(t2,t1),ka(t2,t2)),kw:1/ka(n,n),ln:0,lt:[0,0],lr:[0,0],lw:0},
     o=A.hm&&A.hm.get(key);
   c.v0=dot3(sub(add(A.v,crs(A.w,ra)),B?add(B.v,crs(B.w,rb)):V),n);c.o=o;
@@ -575,9 +582,9 @@ function step(h,a,b,I){const cs=[],W=spun(a.M,b.M,h),at=(Q,X)=>add(Q.O,toW(Q.M,X
     if(A.k==3)for(let j=0;j<16;j++){const X=add(A.x,toW(A.M,[PW*cos(P*j/8),PW*sin(P*j/8),-PLATE.zc])),u=toF(a.M,sub(X,a.O));
       if(onTop(u[0],u[1])&&u[2]>.5){const d=u[2]-.67,pb=at(a,[u[0],u[1],.67]);if(d<r+ts*h){A.tt=1;cs.push(meet(A,null,a.M[2],X,pb,d,tv(pb),W,"t"+A.id+"_"+j,WOOD,h))}}
       else{const g=f.g(X[0],X[1]),z=g[0],m=unit([-g[1],-g[2],1]),d=(X[2]-z)*m[2];
-        if(d<r)cs.push(meet(A,null,m,X,[X[0],X[1],z],d,[0,0,0],[0,0,0],"f"+A.id+"_"+j,WOOD,h))}}
+        if(d<r)cs.push(meet(A,null,m,X,[X[0],X[1],z],d,[0,0,0],[0,0,0],"f"+A.id+"_"+j,FLOOR,h))}}
     // the floor
-    else{const g=ground(A);if(g.d<r)cs.push(meet(A,null,g.n,g.s,g.p,g.d,[0,0,0],[0,0,0],"f"+A.id,WOOD,h))}
+    else{const g=ground(A);if(g.d<r)cs.push(meet(A,null,g.n,g.s,g.p,g.d,[0,0,0],[0,0,0],"f"+A.id,FLOOR,h))}
     // the top and the legs
     if(hypot(q[0],q[1])<1.12+R&&q[2]>-R&&q[2]<.67+R)for(let k=A.k==3?0:-1;k<n;k++){
       if(k>=0&&(hypot(q[0]-foot(k)[0],q[1]-foot(k)[1])>.061+R||q[2]>.6+R))continue;
@@ -680,9 +687,14 @@ function make(k,raw){const s=[RAD,0,MR,0][k],m=[MM,EGG.m,MB,PLATE.m][k];
 function lay(x0,y0,top){if(!tp)return;const c=random(),k=c<1/60?3:c<1/60+1/30?1:0,raw=k==1&&random()<.5,b=make(k,raw),
     u=top?tp.M[2]:[0,0,1],a=random()*2*P,ax=top?add(mul(tp.M[0],cos(a)),mul(tp.M[1],sin(a))):[cos(a),sin(a),0],e0=rot(u,ax,random()*2*P);
   b.off=!top;b.M=k==3?[ax,crs(u,ax),u]:[e0,crs(ax,e0),ax];
-  // set down at (p,q), just touching what it is laid on; and is it clear of everything?
+  // set down at (p,q), just touching what it is laid on -- over a plate, its spaghetti or its
+  // china, come down onto from above to where it first touches; and is it clear of everything?
   const put=(p,q)=>{const S=top?add(tp.O,toW(tp.M,[p,q,.67])):[p,q,f(p,q)];b.x=add(S,mul(u,.2));
-      if(top)b.x=add(b.x,mul(u,dot3(sub(S,surf(b,mul(u,-1))),u)));else for(let i=0;i<3;i++){const g=ground(b);b.x=sub(b.x,mul(g.n,g.d))}},
+      if(top)b.x=add(b.x,mul(u,dot3(sub(S,surf(b,mul(u,-1))),u)));else for(let i=0;i<3;i++){const g=ground(b);b.x=sub(b.x,mul(g.n,g.d))}
+      if(k<3)for(const Pl of balls)if(Pl.k==3){const t=toF(Pl.M,sub(b.x,Pl.x));if(hypot(t[0],t[1])>=PR)continue;
+        const o=b.x,clr=h=>(b.x=add(o,mul(u,h)),pair(b,Pl,1).d>.0005);let lo=-1;
+        for(let h=.3;h>0;h-=.004)if(!clr(h)){lo=h;break}
+        if(lo<0)b.x=o;else{let hi=lo+.004;for(let i=0;i<14;i++){const m=(lo+hi)/2;clr(m)?hi=m:lo=m}b.x=add(o,mul(u,hi))}}},
     // clear of every body, and on the floor of the table's legs and top
     clear=()=>(top?[]:Array.from({length:n+1},(_,k)=>k-1)).every(k=>{const S=part(k),z=gjk(v=>core(b,v),v=>add(tp.O,toW(tp.M,S(toF(tp.M,v)))));return z&&z.d-rim(b)>.0004})&&
       balls.every(o=>{if(len(sub(b.x,o.x))>bound(b)+bound(o)+.001)return 1;if(b.k==3&&o.k==3)return 0;
@@ -907,7 +919,13 @@ function eye(p,h,plane){const V=lookout(),{E,F,R,U}=V,fo=V.f,near=.01,o=W/2,
         if(A[2]>=near!=B[2]>=near){const t=(near-A[2])/(B[2]-A[2]);out.push([A[0]+(B[0]-A[0])*t,A[1]+(B[1]-A[1])*t,near])}}
       if(out.length<3)return 0;x.beginPath();trace(x,out.map(scr));x.closePath();return 1},
     T=tone(plane),items=[],dist=X=>len(sub(X,E)),ink=C("ink#").join(","),
-    band=[C("qingbai-wash"),C("ru-wash"),C("longquan-wash")],lo=lv[0],hi=lv[1],G=48,gx=i=>-1.6+3.2*i/G,Z=[];
+    band=[C("qingbai-wash#"),C("ru-wash#"),C("longquan-wash#")],lo=lv[0],hi=lv[1],cuts=[lo+(hi-lo)/3,lo+2*(hi-lo)/3],
+    // far things fade into the paper, from two reaches off to four (the room goes on past the
+    // plan's square, and its far edge is never seen)
+    fog=X=>max(0,min(1,(dist(X)-2)/2)),wash=(k,a)=>"rgb("+band[k].map((v,i)=>round(v+(C("paper#")[i]-v)*a))+")",
+    // the part of a polygon of the world on one side of a height: above t (s 1), or below (-1)
+    keep=(Q,t,s)=>{const out=[];for(let i=0;i<Q.length;i++){const A=Q[i],B=Q[(i+1)%Q.length],a=s*(A[2]-t),b=s*(B[2]-t);
+      if(a>=0)out.push(A);if(a>=0!=b>=0)out.push(add(A,mul(sub(B,A),a/(a-b))))}return out};
   x.save();x.beginPath();x.rect(0,0,W,W);x.clip();
   // the underside of the top: nothing below it is ever behind it, so it is drawn first
   const U6=Array.from({length:n},(_,k)=>add(tp.O,toW(tp.M,[...corner(k),.6])));
@@ -917,17 +935,27 @@ function eye(p,h,plane){const V=lookout(),{E,F,R,U}=V,fo=V.f,near=.01,o=W/2,
       Q=[[0,0],[-.5,0],[0,-.5],[.5,0],[0,.5],[-.5,-.5]].map(r=>[r,pt(add(tp.O,toW(tp.M,[r[0],r[1],.6])))]).filter(q=>q[1]),
       A=Q[0],B=Q.find(q=>q!==A),Cc=B&&Q.find(q=>q!==A&&q!==B&&abs((B[1][0]-A[1][0])*(q[1][1]-A[1][1])-(B[1][1]-A[1][1])*(q[1][0]-A[1][0]))>1);
     x.fillStyle=Cc?ramp(A[1],B[1],Cc[1],sv(A[0]),sv(B[0]),sv(Cc[0]),T,.25):C("amber-base");x.fill();x.lineWidth=1.2;x.strokeStyle=C("amber-base");x.stroke()}
-  // the floor, a square at a time, in the plan's washes, its contours every 0.012
-  for(let j=0;j<=G;j++)for(let i=0;i<=G;i++)Z[j*(G+1)+i]=f(gx(i),gx(j));
-  for(let j=0;j<G;j++)for(let i=0;i<G;i++){const z=[Z[j*(G+1)+i],Z[j*(G+1)+i+1],Z[(j+1)*(G+1)+i+1],Z[(j+1)*(G+1)+i]],
-      q=[[gx(i),gx(j),z[0]],[gx(i+1),gx(j),z[1]],[gx(i+1),gx(j+1),z[2]],[gx(i),gx(j+1),z[3]]],m=(z[0]+z[1]+z[2]+z[3])/4;
-    items.push([dist([(q[0][0]+q[2][0])/2,(q[0][1]+q[2][1])/2,m]),()=>{if(!poly(q))return;const bc=band[max(0,min(2,fl(3*(m-lo)/(hi-lo+1e-9))))];
-      // filled and edged in its own wash, so no seam shows between squares
-      x.fillStyle=x.strokeStyle=bc;x.fill();x.lineWidth=.8;x.stroke();
+  // the floor, a square at a time: the plan's square in squares of 6.7 cm, the room past it
+  // in squares of 8 cm to 1.28 m off; each in the plan's washes, cut where they change, so
+  // they meet along the heights where they change as the plan's do, with its contours every
+  // 0.012; far squares fading into the paper
+  // (only those a ball round them reaches into the eye's view of, tan 50 degrees each way;
+  // and one that would be drawn wider than 36 points, as four, so near ground is as smooth)
+  const square=(x0,y0,g)=>{const m=[x0+g/2,y0+g/2,0];m[2]=f(m[0],m[1]);const cc=cam(m),rr=.75*g+.05,tn=1.1918,e=1.556*rr;
+    if(cc[2]<near-rr||abs(cc[0])>tn*cc[2]+e||abs(cc[1])>tn*cc[2]+e)return;
+    if(fo*g/max(cc[2],near)>36&&g>1/120){const h=g/2;square(x0,y0,h);square(x0+h,y0,h);square(x0,y0+h,h);square(x0+h,y0+h,h);return}
+    const q=[[x0,y0],[x0+g,y0],[x0+g,y0+g],[x0,y0+g]].map(v=>[v[0],v[1],f(v[0],v[1])]),z=q.map(v=>v[2]),
+      c=[x0+g/2,y0+g/2,(z[0]+z[1]+z[2]+z[3])/4],a=fog(c);if(a>=1)return;
+    // filled and edged in its own wash, so no seam shows between squares; its contours a
+    // square's width later, over the edges of the squares beside it, so none is broken there
+    items.push([dist(c),()=>{for(let k=0;k<3;k++){let Q=q;if(k)Q=keep(Q,cuts[k-1],1);if(k<2)Q=keep(Q,cuts[k],-1);
+        if(Q.length>2&&poly(Q)){x.fillStyle=x.strokeStyle=wash(k,a);x.fill();x.lineWidth=.8;x.stroke()}}}],[dist(c)-g,()=>{
       x.beginPath();for(let l=Math.ceil(min(...z)/.012);l*.012<=max(...z);l++){const v=l*.012,cut=[];
         for(let k=0;k<4;k++){const a=z[k],b=z[(k+1)%4];if(a<v!=b<v){const t=(v-a)/(b-a);cut.push(add(q[k],mul(sub(q[(k+1)%4],q[k]),t)))}}
         for(let k=0;k+1<cut.length;k+=2){const A=pt(cut[k]),B=pt(cut[k+1]);if(A&&B){x.moveTo(A[0],A[1]);x.lineTo(B[0],B[1])}}}
-      x.lineWidth=1;x.strokeStyle="rgba("+ink+",.28)";x.stroke()}])}
+      x.lineWidth=1;x.strokeStyle="rgba("+ink+","+(.28*(1-a)).toFixed(3)+")";x.stroke()}])};
+  for(let j=0;j<48;j++)for(let i=0;i<48;i++)square(-1.6+i/15,-1.6+j/15,1/15);
+  for(let j=0;j<32;j++)for(let i=0;i<32;i++)if(i<8||i>23||j<8||j>23)square(-3.2+.2*i,-3.2+.2*j,.2);
   // the other legs, each round from its foot to the top, with its shadow on the floor
   p.forEach((r,m)=>{if(m==V.L)return;const c=foot(m),g=max(0,plane[0]*r[0]+plane[1]*r[1]+plane[2]-h[m]),Fw=add(tp.O,toW(tp.M,[...c,0]));
     items.push([dist(Fw)+.02,()=>{const R_=.09+3*g,pts=Array.from({length:24},(_,i)=>pt([Fw[0]+R_*cos(P*i/12),Fw[1]+R_*sin(P*i/12),f(Fw[0]+R_*cos(P*i/12),Fw[1]+R_*sin(P*i/12))])).filter(Boolean),
@@ -938,13 +966,18 @@ function eye(p,h,plane){const V=lookout(),{E,F,R,U}=V,fo=V.f,near=.01,o=W/2,
   // white spilt on the floor, as it lies
   for(const q of pools)if(q.h){const w=wet(q),pts=w.parts.flat();if(!pts.length)continue;
     items.push([min(...pts.map(v=>dist([v[0],v[1],f(v[0],v[1])])))-.05,()=>{const P3=v=>[v[0],v[1],f(v[0],v[1])+.0005];
-      for(const p_ of w.parts)if(poly(p_.map(P3))){x.fillStyle=C("white");x.fill()}
-      const Y=pt(P3(q.yo));if(Y){const c=cam(P3(q.yo));x.beginPath();x.arc(Y[0],Y[1],.04*fo/c[2],0,7);x.fillStyle=C("gold-accent");x.fill()}}])}
-  // what lies below the top, or beyond its edge; what lies on it is hidden by it
+      x.globalAlpha=1-fog(P3(q.yo));for(const p_ of w.parts)if(poly(p_.map(P3))){x.fillStyle=C("white");x.fill()}
+      const Y=pt(P3(q.yo));if(Y){const c=cam(P3(q.yo));x.beginPath();x.arc(Y[0],Y[1],.04*fo/c[2],0,7);x.fillStyle=C("gold-accent");x.fill()}x.globalAlpha=1}])}
+  // what lies below the top, or beyond its edge; what lies on it is hidden by it. Each is
+  // drawn after the floor it stands on, by its point nearest the eye (and half a square of
+  // the floor nearer), so the floor under a plate's rim does not cover the rim; far ones fade
+  // as the floor does, and one nearing the edge of the plan's square, where it leaves the
+  // world, fades away over its last 5 cm
   for(const b of balls){const L_=surf(b,[0,0,-1]),q=toF(tp.M,sub(b.x,tp.O));if(onTop(q[0],q[1])&&L_[2]>topZ(L_)-.003)continue;
     const c=cam(b.x);if(c[2]<near+bound(b))continue;
-    items.push([dist(b.x),()=>{const d=unit(sub(b.x,E)),P2=X=>pt(X)||scr([0,0,1]);
-      if(b.k)body(b,d,P2);else{const S=P2(b.x);dot(S[0],S[1],max(1.5,b.r*fo/c[2]),b)}}])}
+    const a=(1-fog(b.x))*max(0,min(1,(1.6-max(abs(b.x[0]),abs(b.x[1])))/.12));if(a<=0)continue;
+    items.push([dist(surf(b,unit(sub(E,b.x))))-.05,()=>{const d=unit(sub(b.x,E)),P2=X=>pt(X)||scr([0,0,1]);x.globalAlpha=a;
+      if(b.k)body(b,d,P2);else{const S=P2(b.x);dot(S[0],S[1],max(1.5,b.r*fo/c[2]),b)}x.globalAlpha=1}])}
   items.sort((p_,q)=>q[0]-p_[0]);for(const[,fn]of items)fn();
   x.restore();x.strokeStyle=C("rule");x.lineWidth=1;x.strokeRect(.5,.5,W-1,W-1)}
 function draw(wall){
