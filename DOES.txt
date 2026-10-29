@@ -92,8 +92,10 @@ What itsthefloor.fyi does. A golf pass must keep every line true.
     it and falls, bounces, rolls on until it rests in a hollow or leaves the map.
     The table is driven, by hand and by the lean, and far heavier than what is on
     it. The world moves in the page clock's steps, each cut into as many as 24 for
-    anything fast, enough that nothing moves more than 0.8 mm in one (up to 4.6
-    m/s); bodies that cannot touch within a step are stepped apart. A body still for half a second, on
+    anything fast, enough that nothing moves more than 0.8 mm in one against
+    whatever it might meet (up to 4.6 m/s): a marble riding a turning top moves
+    hardly at all against it; bodies that cannot touch within a step are stepped
+    apart. A body still for half a second, on
     nothing moving, rests until something wakes it. A marble or an egg is one
     glaze on the table and another once it has left it, in every view: Jun blue
     and crimson at first (item 15).

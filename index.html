@@ -65,17 +65,20 @@ let n=4,th=0,to=0,drag=null,press=null,f,W,E,CW,CH,wide,dpr,map,said,balls=[],go
 // the world's step, in milliseconds of the page's clock
 const STEP=1000/240;
 
-// Floors. Each is continuous, which is all the theorem asks of a floor.
-const rnd=a=>(random()*2-1)*a,
+// Floors. Each is continuous, which is all the theorem asks of a floor. Each is given as its
+// height with its slope both ways, [h, dh/du, dh/dv], exactly; f is the height alone, f.g
+// the three.
+const rnd=a=>(random()*2-1)*a,floor=g=>Object.assign((u,v)=>g(u,v)[0],{g}),
   gauss=(k,a,w)=>{const b=Array.from({length:k},()=>[rnd(1.6),rnd(1.6),rnd(a),w[0]+random()*w[1]]);
-    return(u,v)=>{let h=0;for(const q of b){const p=u-q[0],r=v-q[1];h+=q[2]*exp(-(p*p+r*r)/(2*q[3]*q[3]))}return h}},
+    return(u,v)=>{let h=0,x=0,y=0;for(const q of b){const p=u-q[0],r=v-q[1],s=q[3]*q[3],e=q[2]*exp(-(p*p+r*r)/(2*s));h+=e;x-=e*p/s;y-=e*r/s}return[h,x,y]}},
   kinds=[
-    ()=>gauss(7,.09,[.35,.6]),
-    ()=>{const w=Array.from({length:3},()=>[random()*2*P,2+random()*3,random()*2*P,.02+random()*.025]);
-      return(u,v)=>{let h=0;for(const q of w)h+=q[3]*sin(q[1]*(u*cos(q[0])+v*sin(q[0]))+q[2]);return h}},
+    ()=>floor(gauss(7,.09,[.35,.6])),
+    ()=>{const w=Array.from({length:3},()=>{const a=random()*2*P;return[cos(a),sin(a),2+random()*3,random()*2*P,.02+random()*.025]});
+      return floor((u,v)=>{let h=0,x=0,y=0;for(const q of w){const t=q[2]*(u*q[0]+v*q[1])+q[3],d=q[4]*q[2]*cos(t);h+=q[4]*sin(t);x+=d*q[0];y+=d*q[1]}return[h,x,y]})},
     ()=>{const g=gauss(3,.015,[.3,.4]),u0=rnd(.8),v0=rnd(.8),a=.06+random()*.06;
-      return(u,v)=>{const p=u-u0,q=v-v0;return a*exp(-(p*p+q*q)/1.6)+g(u,v)}},
-    ()=>{const a=rnd(.05),b=rnd(.05),g=gauss(3,.03,[.3,.4]);return(u,v)=>a*u*v+b*(u*u-v*v)+g(u,v)}],
+      return floor((u,v)=>{const p=u-u0,q=v-v0,e=a*exp(-(p*p+q*q)/1.6),r=g(u,v);return[e+r[0],r[1]-e*p/.8,r[2]-e*q/.8]})},
+    ()=>{const a=rnd(.05),b=rnd(.05),g=gauss(3,.03,[.3,.4]);
+      return floor((u,v)=>{const r=g(u,v);return[a*u*v+b*(u*u-v*v)+r[0],a*v+2*b*u+r[1],a*u-2*b*v+r[2]]})}],
   another=()=>{f=kinds[fl(random()*kinds.length)]();if(W)paint();carry();wake()},
   feet=a=>Array.from({length:n},(_,k)=>{const q=a+P/2+2*P*k/n;return[cos(q),sin(q)]}),
   trace=(t,pts)=>pts.forEach((q,i)=>t[i?"lineTo":"moveTo"](q[0],q[1]));
@@ -238,8 +241,8 @@ function elevation(p,plane,e,X,Y,w,tag){const s=w/2.8,cx=X+w/2,leg=.6*s,lw=.085*
     // Drawn slopes are twice the true ones, so a body is turned by the difference about the
     // point it rests on -- the floor's, or the top's, or between them as it is between them
     // -- and sits on the drawn surface as it sits on the true one.
-    if(b&&!b.R){const L=surf(b,[0,0,-1]),u=(X,w)=>{const z=f(X[0],X[1]);return max(0,min(1,(X[2]-z)/(topZ(X)-z)))},w=u(L),q=1e-5,
-        nf=unit([f(L[0]-q,L[1])-f(L[0]+q,L[1]),f(L[0],L[1]-q)-f(L[0],L[1]+q),2*q]),m=unit(add(mul(nf,1-w),mul(tp.M[2],w))),
+    if(b&&!b.R){const L=surf(b,[0,0,-1]),u=(X,w)=>{const z=f(X[0],X[1]);return max(0,min(1,(X[2]-z)/(topZ(X)-z)))},w=u(L),
+        sl=f.g(L[0],L[1]),nf=unit([-sl[1],-sl[2],1]),m=unit(add(mul(nf,1-w),mul(tp.M[2],w))),
         S=surf(b,mul(m,-1)),A=mid(S,u(S)),k=-(m[0]*e[0]+m[1]*e[1])/m[2],r=atan2(k,1)-atan2(2*k,1),cr=cos(r),sr=sin(r),
         pt=X=>{const a=((X[0]-S[0])*e[0]+(X[1]-S[1])*e[1])*s,c=-(X[2]-S[2])*s;return[A[0]+a*cr-c*sr,A[1]+a*sr+c*cr]};
       if(b.fl)line(tm-bound(b)-.04,tm+bound(b)+.04);
@@ -460,35 +463,40 @@ function solve(A,r){const k=r.length,M=A.map((row,i)=>[...row,r[i]]),s=max(1e-30
     for(let j=i+1;j<k;j++){const g=M[j][i]/M[i][i];for(let l=i;l<=k;l++)M[j][l]-=g*M[i][l]}}
   for(let i=k-1;i>=0;i--){let t=M[i][k];for(let j=i+1;j<k;j++)t-=M[i][j]*z[j];z[i]=t/M[i][i]}return z}
 
-// A surface z=F(x,y) in a frame M at O, under a body: the surface's point under the body's
-// lowest point toward it, and its normal there, settled in a few rounds; the body's point
+// A surface z=F(x,y) in a frame M at O, F giving its height and slopes, under a body: the
+// surface's point under the body's lowest point toward it, and its normal there, settled in
+// rounds until the normal holds to a part in ten million -- at most four at a time, each
+// time beginning where the body's last left off on that surface (key); the body's point
 // nearest; the gap. The floor is such a surface in the room's frame; the top of a plate of
 // spaghetti in the plate's.
 const I3=[[1,0,0],[0,1,0],[0,0,1]],WOOD={e:.6,mu:.4};
-function field(b,O,M,F){let m=[0,0,1],p,s,q;
-  for(let i=0;i<4;i++){s=surf(b,toW(M,mul(m,-1)));q=toF(M,sub(s,O));const e=1e-5;p=[q[0],q[1],F(q[0],q[1])];
-    m=unit([(F(q[0]-e,q[1])-F(q[0]+e,q[1]))/(2*e),(F(q[0],q[1]-e)-F(q[0],q[1]+e))/(2*e),1])}
-  const n=toW(M,m),P=add(O,toW(M,p));s=surf(b,mul(n,-1));return{n,p:P,s,d:dot3(sub(s,P),n),q:p}}
-const ground=b=>field(b,[0,0,0],I3,f),PASTA={e:.05,mu:.6},CHINA={e:.5,mu:.35};
+function field(b,O,M,F,key){const fm=b.fm||(b.fm={});let m=fm[key]||[0,0,1],p,s,q;
+  for(let i=0;i<4;i++){s=surf(b,toW(M,mul(m,-1)));q=toF(M,sub(s,O));const g=F(q[0],q[1]),m1=unit([-g[1],-g[2],1]),c=len(sub(m1,m));
+    p=[q[0],q[1],g[0]];m=m1;if(c<1e-7)break}
+  fm[key]=m;const n=toW(M,m),P=add(O,toW(M,p));s=surf(b,mul(n,-1));return{n,p:P,s,d:dot3(sub(s,P),n),q:p}}
+const ground=b=>field(b,[0,0,0],I3,f.g,"f"),PASTA={e:.05,mu:.6},CHINA={e:.5,mu:.35};
 // The point of a plate of spaghetti's section (r out from its axis, z up from its foot)
 // nearest (a,b), and whether (a,b) lies inside it: its top (heap and china), the end of its
-// rim, its underside, each searched along its length and the nearest refined.
+// rim, its underside, each searched along its length and the nearest refined (by golden
+// sections, to a billionth of a reach).
 function sect(a,b){const under=r=>max(0,dish(r)-PT),best=[1/0,0,0],
-    curve=F=>{let k=0,bd=1/0;for(let i=0;i<=48;i++){const r=PR*i/48,d=(r-a)**2+(F(r)-b)**2;if(d<bd){bd=d;k=i}}
-      let lo=PR*max(0,k-1)/48,hi=PR*min(48,k+1)/48;
-      for(let i=0;i<40;i++){const m1=lo+(hi-lo)/3,m2=hi-(hi-lo)/3;(m1-a)**2+(F(m1)-b)**2<(m2-a)**2+(F(m2)-b)**2?hi=m2:lo=m1}
-      const r=(lo+hi)/2,d=(r-a)**2+(F(r)-b)**2;if(d<best[0])best.splice(0,3,d,r,F(r))};
+    curve=F=>{const D=r=>(r-a)**2+(F(r)-b)**2,g=.6180339887;let k=0,bd=1/0;for(let i=0;i<=48;i++){const d=D(PR*i/48);if(d<bd){bd=d;k=i}}
+      let lo=PR*max(0,k-1)/48,hi=PR*min(48,k+1)/48,c=hi-g*(hi-lo),e=lo+g*(hi-lo),dc=D(c),de=D(e);
+      for(let i=0;i<36;i++)if(dc<de){hi=e;e=c;de=dc;c=hi-g*(hi-lo);dc=D(c)}else{lo=c;c=e;dc=de;e=lo+g*(hi-lo);de=D(e)}
+      const r=(lo+hi)/2,d=D(r);if(d<best[0])best.splice(0,3,d,r,F(r))};
   curve(pile);curve(under);const z=max(PH-PT,min(PH,b)),d=(PR-a)**2+(z-b)**2;if(d<best[0])best.splice(0,3,d,PR,z);
   return[best[1],best[2],a<=PR&&b>=under(a)&&b<=pile(a)]}
 // A body and a plate of spaghetti. A sphere, by the plate's section in the plane through the
 // sphere's centre and the plate's axis, exactly; an egg over the plate meets its top as a
 // surface, and beside it the plate's outline (too large to pass under the rim, it can meet
-// nothing else). The material is the heap's or the china's, wherever they meet.
-function pair(o,Pl){const t=toF(Pl.M,sub(o.x,Pl.x)),a=hypot(t[0],t[1]),b=t[2]+PLATE.zc;
-  if(o.r){const e=a>1e-9?[t[0]/a,t[1]/a]:[1,0],[r,z,inside]=sect(a,b),dr=a-r,dz=b-z,l=hypot(dr,dz)||1e-12,s=inside?-1:1,
+// nothing else). The material is the heap's or the china's, wherever they meet. A sphere
+// further than reach from the box the section lies in is told only how far it is from that.
+function pair(o,Pl,reach){const t=toF(Pl.M,sub(o.x,Pl.x)),a=hypot(t[0],t[1]),b=t[2]+PLATE.zc;
+  if(o.r){const l0=hypot(max(0,a-PR),max(0,-b,b-PT-HH))-o.r;if(l0>reach)return{d:l0};
+    const e=a>1e-9?[t[0]/a,t[1]/a]:[1,0],[r,z,inside]=sect(a,b),dr=a-r,dz=b-z,l=hypot(dr,dz)||1e-12,s=inside?-1:1,
       n=toW(Pl.M,[s*dr/l*e[0],s*dr/l*e[1],s*dz/l]);
     return{n,pa:sub(o.x,mul(n,o.r)),pb:add(Pl.x,toW(Pl.M,[r*e[0],r*e[1],z-PLATE.zc])),d:s*l-o.r,mat:z>dish(r)+1e-9?PASTA:CHINA}}
-  if(a<PR&&b>dish(a)-PT){const g=field(o,Pl.x,Pl.M,(x,y)=>pile(hypot(x,y))-PLATE.zc),r=hypot(g.q[0],g.q[1]);
+  if(a<PR&&b>dish(a)-PT){const g=field(o,Pl.x,Pl.M,(x,y)=>{const r=hypot(x,y),c=r?pileD(r)/r:0;return[pile(r)-PLATE.zc,c*x,c*y]},Pl.id),r=hypot(g.q[0],g.q[1]);
     return{n:g.n,pa:g.s,pb:g.p,d:g.d,mat:heap(r)>dish(r)?PASTA:CHINA}}
   const z=gjk(u=>core(o,u),u=>surf(Pl,u));
   if(z){const m=unit(sub(z.a,z.b));return{n:m,pa:sub(z.a,mul(m,rim(o))),pb:z.b,d:z.d-rim(o),mat:CHINA}}
@@ -519,20 +527,19 @@ function warm(c){const{A,B,n,ra,rb,t1,t2,h,o}=c;if(!o)return;const s=h/o[4];
 // One push at a contact: mode 0 keeps the gap, and parts any overlap by a fifth a step (at
 // most 4 cm/s, so nothing is flung); mode 1 keeps the gap without the parting; mode 2 is
 // the bounce. Then friction, within mu of the push; rolling and twist, within their levers.
-// It returns how much it changed the speed there, so the rounds can stop when they agree.
 function push(c,mode){const{A,B,n,ra,rb,h}=c,rel=()=>sub(add(A.v,crs(A.w,ra)),B?add(B.v,crs(B.w,rb)):c.V),wr=()=>sub(A.w,B?B.w:c.W);
-  if(mode==2){if(!(c.v0<-VT&&c.ln>0))return 0;c.hit=1}
+  if(mode==2){if(!(c.v0<-VT&&c.ln>0))return;c.hit=1}
   const g=mode==1?c.dn:c.d,tg=mode==2?-c.e*c.v0:g>0?-g/h:mode?0:min(.1,.2*max(0,-g-.0005)/h),
     l=max(0,c.ln-c.kn*(dot3(rel(),n)-tg)),dl=l-c.ln;
   c.ln=l;kick(A,mul(n,dl),ra);if(B)kick(B,mul(n,-dl),rb);
-  if(mode==2)return 0;
+  if(mode==2)return;
   let v=rel(),K=c.kt,a=c.lt[0]-K[0]*dot3(v,c.t1)-K[1]*dot3(v,c.t2),b=c.lt[1]-K[2]*dot3(v,c.t1)-K[3]*dot3(v,c.t2),m=hypot(a,b),lim=c.mu*c.ln;
   if(m>lim){a*=lim/m;b*=lim/m}
-  let J=add(mul(c.t1,a-c.lt[0]),mul(c.t2,b-c.lt[1]));const ch=max(abs(dl),len(J))/c.kn;c.lt=[a,b];kick(A,J,ra);if(B)kick(B,mul(J,-1),rb);
+  let J=add(mul(c.t1,a-c.lt[0]),mul(c.t2,b-c.lt[1]));c.lt=[a,b];kick(A,J,ra);if(B)kick(B,mul(J,-1),rb);
   v=wr();K=c.kr;a=c.lr[0]-K[0]*dot3(v,c.t1)-K[1]*dot3(v,c.t2);b=c.lr[1]-K[2]*dot3(v,c.t1)-K[3]*dot3(v,c.t2);m=hypot(a,b);lim=c.rr*c.ln;
   if(m>lim){a*=lim/m;b*=lim/m}
   J=add(mul(c.t1,a-c.lr[0]),mul(c.t2,b-c.lr[1]));c.lr=[a,b];twirl(A,J);if(B)twirl(B,mul(J,-1));
-  lim=c.mu*c.tw*c.ln;a=max(-lim,min(lim,c.lw-c.kw*dot3(wr(),n)));J=mul(n,a-c.lw);c.lw=a;twirl(A,J);if(B)twirl(B,mul(J,-1));return ch}
+  lim=c.mu*c.tw*c.ln;a=max(-lim,min(lim,c.lw-c.kw*dot3(wr(),n)));J=mul(n,a-c.lw);c.lw=a;twirl(A,J);if(B)twirl(B,mul(J,-1))}
 
 // One step of the world, h seconds, the table moving from pose a to pose b: gravity; a raw
 // egg's liquid drawn round; the contacts; ten rounds of pushes; the bodies move; four
@@ -556,8 +563,9 @@ function step(h,a,b,I){const cs=[],W=spun(a.M,b.M,h),at=(Q,X)=>add(Q.O,toW(Q.M,X
     tv=p=>mul(sub(at(b,toF(a.M,sub(p,a.O))),p),1/h),
     ts=max(...Array.from({length:n},(_,k)=>len(sub(at(b,[...corner(k),.67]),at(a,[...corner(k),.67])))))/h,
     sup=k=>{const S=part(k);return u=>at(a,S(toF(a.M,u)))};
+  const fell=new Set();
   for(const o of I){if(o.z&&o.tt&&ts>1e-9)o.z=o.q=0;
-    if(!o.z){o.v[2]-=G*h;if(o.raw)stir(o,h);o.w=inv(o,o.L);o.tt=o.fl=0;
+    if(!o.z){o.v[2]-=G*h;fell.add(o);if(o.raw)stir(o,h);o.w=inv(o,o.L);o.tt=o.fl=0;
       // air moving past a body drags it: half the air's density times the body's drag
       // coefficient and frontal area, times the speed between them squared
       const u=air(o.x);if(u){const rv=sub(u,o.v);o.v=add(o.v,mul(rv,min(1,.5*RHO*o.cd*o.ar*len(rv)*h/o.m)))}}}
@@ -566,7 +574,7 @@ function step(h,a,b,I){const cs=[],W=spun(a.M,b.M,h),at=(Q,X)=>add(Q.O,toW(Q.M,X
     // a plate stands on the rim of its foot, met at sixteen points, on the top or the floor
     if(A.k==3)for(let j=0;j<16;j++){const X=add(A.x,toW(A.M,[PW*cos(P*j/8),PW*sin(P*j/8),-PLATE.zc])),u=toF(a.M,sub(X,a.O));
       if(onTop(u[0],u[1])&&u[2]>.5){const d=u[2]-.67,pb=at(a,[u[0],u[1],.67]);if(d<r+ts*h){A.tt=1;cs.push(meet(A,null,a.M[2],X,pb,d,tv(pb),W,"t"+A.id+"_"+j,WOOD,h))}}
-      else{const e=1e-5,z=f(X[0],X[1]),m=unit([f(X[0]-e,X[1])-f(X[0]+e,X[1]),f(X[0],X[1]-e)-f(X[0],X[1]+e),2*e]),d=(X[2]-z)*m[2];
+      else{const g=f.g(X[0],X[1]),z=g[0],m=unit([-g[1],-g[2],1]),d=(X[2]-z)*m[2];
         if(d<r)cs.push(meet(A,null,m,X,[X[0],X[1],z],d,[0,0,0],[0,0,0],"f"+A.id+"_"+j,WOOD,h))}}
     // the floor
     else{const g=ground(A);if(g.d<r)cs.push(meet(A,null,g.n,g.s,g.p,g.d,[0,0,0],[0,0,0],"f"+A.id,WOOD,h))}
@@ -588,7 +596,7 @@ function step(h,a,b,I){const cs=[],W=spun(a.M,b.M,h),at=(Q,X)=>add(Q.O,toW(Q.M,X
     const[A,B]=Q.z||!P.z&&P.id<Q.id?[P,Q]:[Q,P],e=sub(A.x,B.x),r=(len(A.v)+len(A.w)*bound(A))*h+.002,rB=B.z?0:(len(B.v)+len(B.w)*bound(B))*h;
     if(len(e)>bound(A)+bound(B)+r+rB)return;
     // something on a plate meets its top, heap or china; anything else, the plate's outline
-    if((A.k==3)!=(B.k==3)){const[o,Pl]=A.k==3?[B,A]:[A,B],z=pair(o,Pl);
+    if((A.k==3)!=(B.k==3)){const[o,Pl]=A.k==3?[B,A]:[A,B],z=pair(o,Pl,r+rB);
       if(z.d<r+rB){if(o.z)o.z=o.q=0;if(Pl.z)Pl.z=Pl.q=0;cs.push(meet(o,Pl,z.n,z.pa,z.pb,z.d,0,0,o.id+"_"+Pl.id,z.mat,h))}return}
     let m,pa,pb;
     if(A.r&&B.r){m=unit(e);pa=sub(A.x,mul(m,A.r));pb=add(B.x,mul(m,B.r))}
@@ -596,15 +604,19 @@ function step(h,a,b,I){const cs=[],W=spun(a.M,b.M,h),at=(Q,X)=>add(Q.O,toW(Q.M,X
       if(z){m=unit(sub(z.a,z.b));pa=sub(z.a,mul(m,rim(A)));pb=add(z.b,mul(m,rim(B)))}
       else{m=unit(e);pa=surf(A,mul(m,-1));pb=surf(B,m)}}
     const d=dot3(sub(pa,pb),m);if(d<r+rB){if(B.z)B.z=B.q=0;cs.push(meet(A,B,m,pa,pb,d,0,0,A.id+"_"+B.id,null,h))}});
-  // rounds of pushes until they agree (no contact's speed changed by 0.04 mm/s), at most ten;
-  // four times as many where a plate, 180 times a marble's weight, presses on lighter things
-  const much=I.some(o=>o.k==3)?4:1,rounds=(mode,most)=>{for(let i=0;i<most*much;i++){let e=0;for(const c of cs)e=max(e,push(c,mode));if(e<1e-4)break}};
+  // rounds of pushes until they agree -- a whole round moves no point of any body by 0.04
+  // mm/s -- at most ten; four times as many where a plate, 180 times a marble's weight,
+  // presses on lighter things. (A plate stands on sixteen points, more than it needs, and its
+  // pushes can pass its weight from point to point a long while with nothing moving for it.)
+  const much=I.some(o=>o.k==3)?4:1,rounds=(mode,most)=>{for(let i=0;i<most*much;i++){const was=I.map(o=>[o.v,o.w]);for(const c of cs)push(c,mode);
+      let e=0;I.forEach((o,k)=>{e=max(e,len(sub(o.v,was[k][0]))+len(sub(o.w,was[k][1]))*bound(o))});if(e<1e-4)break}};
   for(const c of cs)warm(c);
   rounds(0,10);
   for(const c of cs)c.dn=c.d+h*dot3(sub(add(c.A.v,crs(c.A.w,c.ra)),c.B?add(c.B.v,crs(c.B.w,c.rb)):c.V),c.n);
-  // a body held by nothing flies as gravity has it, exactly; one held moves at its speed
+  // a body held by nothing flies as gravity has it, exactly; one held moves at its speed; one
+  // woken during the step, which gravity has not yet drawn, moves at its speed too
   const held=new Set();for(const c of cs)if(c.ln>0){held.add(c.A);held.add(c.B)}
-  for(const o of I)if(!o.z){o.x=add(o.x,mul(o.v,h));if(!held.has(o))o.x[2]+=G*h*h/2;spin(o,h);o.w=inv(o,o.L)}
+  for(const o of I)if(!o.z){o.x=add(o.x,mul(o.v,h));if(!held.has(o)&&fell.has(o))o.x[2]+=G*h*h/2;spin(o,h);o.w=inv(o,o.L)}
   rounds(1,4);
   // what is remembered is the push that holds, not a bounce's
   for(const c of cs)c.keep=c.ln;
@@ -625,11 +637,17 @@ function near(L,m,fn){const S=L.slice().sort((a,b)=>a.x[0]-b.x[0]),w=2*max(0,...
   for(let i=0;i<S.length;i++)for(let j=i+1;j<S.length&&S[j].x[0]-S[i].x[0]<w;j++)fn(S[i],S[j])}
 // A step of the page's clock. Bodies that might touch within it go together, an island;
 // the floor and the table join none. Each island moves in as many steps of the world as
-// keep it within 0.8 mm of where it was a step before -- so a marble falling fast takes
-// short steps alone -- the table between its two poses.
+// keep it within 0.8 mm of where it was a step before, against whatever it might meet -- so
+// a marble falling fast takes short steps alone, and one riding a turning top long ones --
+// the table between its two poses.
 function advance(a,b){const h=STEP/1000,c=k=>[...corner(k),.67],N=balls.length,
     rim=max(...Array.from({length:n},(_,k)=>len(sub(add(b.O,toW(b.M,c(k))),add(a.O,toW(a.M,c(k)))))))/h,
-    sp=o=>o.z?0:len(o.v)+len(o.w)*bound(o),up=new Map(balls.map(o=>[o,o])),root=o=>up.get(o)==o?o:(up.set(o,root(up.get(o))),up.get(o)),isl=new Map();
+    sp=o=>o.z?0:len(o.v)+len(o.w)*bound(o),up=new Map(balls.map(o=>[o,o])),root=o=>up.get(o)==o?o:(up.set(o,root(up.get(o))),up.get(o)),isl=new Map(),
+    // how fast a body moves against what it might meet: off the top, against the floor and,
+    // near the table, its legs and edge, as fast as any of them moves; on the top, against the
+    // top under it, the top's turning across the body's reach added for what lies beside it
+    W=spun(a.M,b.M,h),tv=X=>mul(sub(add(b.O,toW(b.M,toF(a.M,sub(X,a.O)))),X),1/h),
+    mv=o=>o.off?sp(o)+(hypot(o.x[0],o.x[1])<1.3?rim:0):len(sub(o.v,tv(o.x)))+(len(sub(o.w,W))+len(W))*bound(o);
   // somebody sneezes, at a plate of spaghetti whose time has come: uphill of the meatball,
   // 30 cm off and 30 cm up, at it; the gust wakes whatever it reaches
   for(const o of balls)if(o.k==3&&o.at&&sim>=o.at){o.at=0;const X=balls.includes(o.ball)?o.ball.x:o.x,w=toW(o.M,o.down),
@@ -640,7 +658,7 @@ function advance(a,b){const h=STEP/1000,c=k=>[...corner(k),.67],N=balls.length,
   for(const o of balls){const r=root(o);isl.has(r)?isl.get(r).push(o):isl.set(r,[o])}
   for(const I of isl.values()){const near=I.some(o=>hypot(o.x[0],o.x[1])<1.3);
     if(I.every(o=>o.z)&&!(near&&rim>1e-9&&I.some(o=>o.tt)))continue;
-    const m=min(24,max(1,-fl(-(max(...I.map(sp))+(near?rim:0))*h/.002)));
+    const m=min(24,max(1,-fl(-max(...I.map(mv))*h/.002)));
     let q=a;for(let i=1;i<=m;i++){const t=i/m,r=i==m?b:pose(a.plane.map((z,j)=>z+(b.plane[j]-z)*t),a.t+(b.t-a.t)*t);step(h/m,q,r,I);q=r}}
   for(const o of balls)if(o.broke)spill(o);
   // what leaves the map is gone; a meatball, out the door
@@ -670,7 +688,7 @@ function lay(x0,y0,top){if(!tp)return;const c=random(),k=c<1/60?3:c<1/60+1/30?1:
       balls.every(o=>{if(len(sub(b.x,o.x))>bound(b)+bound(o)+.001)return 1;if(b.k==3&&o.k==3)return 0;
       if(b.k==3||o.k==3){const[q,Pl]=b.k==3?[o,b]:[b,o],t=toF(Pl.M,sub(q.x,Pl.x)),r=hypot(t[0],t[1]);
         // and not under a plate's rim
-        return pair(q,Pl).d>.0004&&!(r<PR+bound(q)&&t[2]+PLATE.zc<dish(min(r,PR)))}
+        return pair(q,Pl,.0004).d>.0004&&!(r<PR+bound(q)&&t[2]+PLATE.zc<dish(min(r,PR)))}
       if(b.r&&o.r)return len(sub(b.x,o.x))-b.r-o.r>.0004;const z=gjk(v=>core(b,v),v=>core(o,v));return z&&z.d-rim(b)-rim(o)>.0004});
   // where something already lies, beside it: the nearest clear place, on rings 1.6 mm apart
   out:for(let i=0;i<80;i++)for(let j=0,J=max(1,6*i);j<J;j++){const a=2*P*j/J,p=x0+.004*i*cos(a),q=y0+.004*i*sin(a);
