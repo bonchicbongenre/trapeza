@@ -41,7 +41,7 @@ What itsthefloor.fyi does. A golf pass must keep every line true.
     plan's own ramp, the sides and underside a little deeper. Grounds, legs,
     marbles, eggs and pools are drawn back to front, and each is hidden by exactly
     the part of the slab nearer the camera than it, so nothing appears or vanishes
-    except by moving. The floor's relief is drawn at twice its size, and the table
+    at the slab's edge except by moving. The floor's relief is drawn at twice its size, and the table
     is one rigid piece in that drawing. A body keeps its true size and shape: it
     is drawn from the point it rests on, by the floor's map or the table's (between
     them in the air, as it is between them), turned by the difference between the
@@ -49,21 +49,21 @@ What itsthefloor.fyi does. A golf pass must keep every line true.
     the drawn surface under it rises toward the camera, so it sits on the drawn
     surface as it sits on the true one (a plate on a tipped top, on its face, not
     into it). Each foot has the floor's section at its depth, the whole width of
-    the view; so does each body off the table, at its own depth (what lies within 4
-    mm of one depth sharing one), and the white on the floor at its own, each hidden
-    by whatever is nearer, so nothing stands on air and the ground moves with what
-    moves on it, unbroken. A body's section comes and goes over 0.4 s, as the body
-    comes onto the floor and as it goes down the hole or onto a plate; the white's
-    takes over its egg's; and a body leaving the world at the plan's edge fades away
-    with its section over its last 5 cm. The hole is shown as if seen through the
-    ground, as the legs are through the top in the plan: its cut through its middle,
-    straight down to its bottom, is drawn first, in its colour (item 19); ground
-    behind it is not drawn over it, and ground in front lies over it as a veil, a
-    quarter its strength and without its ridge, so the hole shows paler the more
-    ground there is in front of it; what stands above the floor, a leg or a
-    body, is drawn over it whatever its depth, and what is down it, in it -- so
-    nothing comes and goes there as the table turns, nor seems to go down it that
-    has not. Each ground is in the plan's three washes, banded at the same heights,
+    the view; so does each body moving off the table, at its own depth (what lies
+    within 4 mm of one depth sharing one), and the white on the floor at its own,
+    each hidden by whatever is nearer, so nothing rolls on air and the ground moves
+    with what moves on it, unbroken; a body at rest sits where it is, without one.
+    A body's section comes and goes over 0.4 s, as the body moves on the floor and
+    as it comes to rest, goes down the hole or onto a plate; the white's takes over
+    its egg's; and a body leaving the world at the plan's edge fades away with its
+    section over its last 5 cm. The hole is seen only from the front: while no
+    section lies nearer than it -- a foot's, a moving body's, the white's -- its cut
+    through its middle, straight down to its bottom, is drawn first, in its colour
+    (item 19), with its own section; ground behind it is not drawn over it; what
+    stands above the floor, a leg or a body, is drawn over it whatever its depth, and
+    what is down it, in it. As a section comes in front of it, the hole, its section
+    and what is down it fade away over 0.4 s, as that section comes, and back as it
+    goes. Each ground is in the plan's three washes, banded at the same heights,
     so a colour is a height in every view, as the top's shade is.
  8. A screen reader hears "It is still.", "It rocks.", "One foot is in the air."
     or "N feet are in the air.", then, for a moment after one, "Somebody
@@ -98,7 +98,7 @@ What itsthefloor.fyi does. A golf pass must keep every line true.
     plate's rim, and on the floor clear of the legs, the top and the hole (what goes
     down it must roll there); where there is no clear place, nothing is laid. One
     time in thirty it is an egg (item 16);
-    one time in sixty, a plate of spaghetti (item 17).
+    one time in a hundred and fifty, a plate of spaghetti (item 17).
 12. One world moves them all: rigid bodies in their true shapes under gravity,
     and, wherever two things touch (two bodies, a body and the floor, the top or
     a leg), a push that keeps them from passing into each other and gives back a
