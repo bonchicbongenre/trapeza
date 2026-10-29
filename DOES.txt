@@ -2,8 +2,10 @@ What itsthefloor.fyi does. A golf pass must keep every line true.
 
  1. A new continuous floor on every visit, and on "another floor": bumps, waves,
     a hill, or a saddle.
- 2. The plan shows the floor in three celadon washes by height (low qingbai, middle
-    Ru, high Longquan) with faint ink contours every 0.012 of a foot's reach.
+ 2. The plan shows the floor in three washes by height, all of one family: celadon
+    at first (low qingbai, middle Ru, high Longquan), then Jun (crimson, purple
+    splash, Jun blue), then tenmoku (gold, amber, rust); with faint ink contours
+    every 0.012 of a foot's reach.
  3. The table is a regular top with 3, 4, 5 or 6 feet, chosen by the leg buttons
     (the chosen one is pressed). Feet sit at the corners' directions, at radius 1;
     the top reaches 1.12.
@@ -52,3 +54,9 @@ What itsthefloor.fyi does. A golf pass must keep every line true.
 12. Each elevation is a camera with a frame: nothing in it is drawn outside its
     panel, and a marble out of shot is simply not in that view.
 13. The favicon is the table from above, in amber, lighter on dark tab bars.
+14. A dot before the theme button turns the glazes: the floor to the next family,
+    and the table to the middle glaze of the family before the floor's (amber on
+    celadon, Ru on Jun, purple splash on tenmoku), and round again. The dot wears
+    the middle glaze of the floor to come; a screen reader hears that family's
+    name. The marbles keep theirs. The drawing fades from one to the
+    next as it does for the theme; nothing is kept; without script there is no dot.
