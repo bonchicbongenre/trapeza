@@ -59,8 +59,8 @@ What itsthefloor.fyi does. A golf pass must keep every line true.
     ground, as the legs are through the top in the plan: its cut through its middle,
     straight down to its bottom, is drawn first, in its colour (item 19); ground
     behind it is not drawn over it, and ground in front lies over it as a veil, a
-    quarter its strength, its ridge running on across, so the hole shows paler the
-    more ground there is in front of it; what stands above the floor, a leg or a
+    quarter its strength and without its ridge, so the hole shows paler the more
+    ground there is in front of it; what stands above the floor, a leg or a
     body, is drawn over it whatever its depth, and what is down it, in it -- so
     nothing comes and goes there as the table turns, nor seems to go down it that
     has not. Each ground is in the plan's three washes, banded at the same heights,
@@ -157,13 +157,16 @@ What itsthefloor.fyi does. A golf pass must keep every line true.
     one met as hard as a fall of 20 cm breaks open. On the floor its white is a
     liquid: a thin film flowing over the floor's relief as thin films do, a
     Bingham fluid that is still until the stress at the floor passes its yield
-    (0.5 Pa; whole white measures below 0.8) and then flows with a plastic
-    viscosity of 0.1 Pa s (an estimate: egg white thins as it is sheared, and a
-    creeping film shears slowly); 33 cubic centimetres, its depth kept on cells 8
-    mm a side. It starts as a splash would leave it, 10 cm across (the splash is
-    not followed), runs downhill and into hollows, and stops where it has thinned
-    to its yield: on a level floor 17 cm across and 3 mm deep, as a static
-    Bingham puddle is. The yolk and the bits of shell ride its surface. On
+    and then flows with a plastic viscosity of 0.1 Pa s; 33 cubic centimetres, its
+    depth kept on cells 8 mm a side. The yield is 4 Pa, an estimate: white stirred
+    in a rheometer yields below 0.8, but a cracked egg's thick white is a gel that
+    holds a mound, and 4 leaves a large egg's white, gathered and let go, lying 11
+    cm across and 6.5 mm deep, as a static Bingham puddle does. The viscosity is an
+    estimate too: egg white thins as it is sheared, and a creeping film shears
+    slowly. It starts as a splash would leave it, 10 cm across (the splash is not
+    followed), runs downhill and into hollows, and stops where it has thinned to
+    its yield: on a level floor 12 cm across and 4 mm deep. The yolk and the bits
+    of shell ride its surface. On
     another floor it flows again, on that one. Nothing rolling through it feels
     it, and it flows under the legs as if they were not there. On the top, where
     no egg breaks but by something a hand could not do, the white is drawn,

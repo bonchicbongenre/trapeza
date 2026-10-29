@@ -216,15 +216,13 @@ function elevation(p,plane,e,X,Y,w,tag){const s=w/2.8,cx=X+w/2,leg=.6*s,lw=.085*
     // lives inside its own ground, so none of it shows past the green; none over the hole
     cut=(a,b,z,iw)=>{const m=max(8,round((b-a)*20)),pts=[],g=new Path2D();for(let i=0;i<=m;i++){const t=a+(b-a)*i/m;pts.push([cx+t*s,gy(t,z)])}
       g.moveTo(cx+a*s,Y+.12*w);for(const q of pts)g.lineTo(q[0],q[1]);g.lineTo(cx+b*s,Y+.12*w);g.closePath();
-      // (where it is nearer than the hole, it lies over the hole as a veil: what it hides
-      // there shows through it, paler, and the paler for every veil between; its ridge runs
-      // on across the hole, as it is in front of it)
-      const near_=cav&&z<hz,ga=x.globalAlpha,
-        bands=()=>{for(const j of[1,2]){const yk=Y-(lv[0]+(lv[1]-lv[0])*j/3)*2*s;x.fillStyle=C(j<2?"ru-wash":"longquan-wash");x.fillRect(X,Y-.6*w,w,max(0,yk-Y+.6*w))}};
+      const bands=()=>{for(const j of[1,2]){const yk=Y-(lv[0]+(lv[1]-lv[0])*j/3)*2*s;x.fillStyle=C(j<2?"ru-wash":"longquan-wash");x.fillRect(X,Y-.6*w,w,max(0,yk-Y+.6*w))}};
       x.save();if(cav){x.beginPath();x.rect(X,Y-.6*w,w,.72*w);trace(x,cav.shape);x.closePath();x.clip("evenodd")}
-      x.fillStyle=C("qingbai-wash");x.fill(g);x.clip(g);bands();if(!near_){x.beginPath();trace(x,pts);x.lineWidth=iw;x.strokeStyle=C("ink");x.stroke()}x.restore();
-      if(near_){x.save();x.beginPath();trace(x,cav.shape);x.closePath();x.clip();x.clip(g);x.globalAlpha=ga*.25;x.fillStyle=C("qingbai-wash");x.fillRect(X,Y-.6*w,w,.72*w);bands();x.restore();
-        x.save();x.clip(g);x.beginPath();trace(x,pts);x.lineWidth=iw;x.strokeStyle=C("ink");x.stroke();x.restore()}},
+      x.fillStyle=C("qingbai-wash");x.fill(g);x.clip(g);bands();x.beginPath();trace(x,pts);x.lineWidth=iw;x.strokeStyle=C("ink");x.stroke();x.restore();
+      // and where it is nearer than the hole, over the hole as a veil, without its ridge:
+      // what it hides there shows through it, paler, and the paler for every veil between
+      if(cav&&z<hz){const ga=x.globalAlpha;x.save();x.beginPath();trace(x,cav.shape);x.closePath();x.clip();x.clip(g);x.globalAlpha=ga*.25;
+        x.fillStyle=C("qingbai-wash");x.fillRect(X,Y-.6*w,w,.72*w);bands();x.restore()}},
     // a point of the world as this camera draws it: by the floor, its relief at twice its
     // size and heights over it as they are; by the table, as part of that rigid piece;
     // anywhere between, weighed by where between it is
@@ -861,13 +859,15 @@ const pw=(q,dx,dy)=>q.on?add(tp.O,toW(tp.M,[q.c[0]+dx,q.c[1]+dy,.67])):[q.c[0]+d
 
 // Egg white on the floor, a liquid: a thin film over the floor's relief, flowing as thin
 // films do (lubrication), as a Bingham fluid -- still until the stress at the floor passes
-// its yield, 0.5 Pa (whole white measures below 0.8), then with a plastic viscosity of 0.1
-// Pa s (an estimate: egg white thins as it is sheared, and a creeping film shears slowly);
+// its yield, 4 Pa (an estimate: white stirred in a rheometer yields below 0.8, but a cracked
+// egg's thick white is a gel that holds a mound, and 4 leaves a large egg's white lying 11 cm
+// across and 6.5 mm deep), then with a plastic viscosity of 0.1 Pa s (an estimate too: egg
+// white thins as it is sheared, and a creeping film shears slowly);
 // 1.035 g a cubic centimetre, 33 of them. The splash is not followed: the white starts as
 // a splash leaves it, 10 cm across. Its depth h on a square of cells 8 mm a side, 45 cm
 // across, about where it broke; the yolk and the bits of shell ride its surface. FC is the
 // density times gravity over six viscosities, FY the yield over density times gravity.
-const FN=56,FX=.02,FC=6767,FY=1.23e-4,FV=5.16e-4,
+const FN=56,FX=.02,FC=6767,FY=9.85e-4,FV=5.16e-4,
   cell=(q,i,j)=>[q.o[0]+(i+.5)*FX,q.o[1]+(j+.5)*FX],
   // the floor under each cell, again whenever the floor is another, and which cells are over
   // the hole: what flows to its edge pours in and is gone
