@@ -48,20 +48,29 @@ What itsthefloor.fyi does. A golf pass must keep every line true.
     drawn slope there and the true one, and each of its points raised with depth as
     the drawn surface under it rises toward the camera, so it sits on the drawn
     surface as it sits on the true one (a plate on a tipped top, on its face, not
-    into it). The ground slices belong to the feet, so the floor holds
-    still; a body off the table carries a short section of its own ground, filled
-    as a foot's is and hidden as it is by what is nearer, so nothing stands on air,
-    nearer the camera than any foot or not; so does the white on the floor. Each
-    ground is in the plan's three washes, banded at the same heights, so a colour
-    is a height in every view, as the top's shade is.
+    into it). Each foot has the floor's section at its depth, the whole width of
+    the view; so does each body off the table, at its own depth (what lies within 4
+    mm of one depth sharing one), and the white on the floor at its own, each hidden
+    by whatever is nearer, so nothing stands on air and the ground moves with what
+    moves on it, unbroken. A body's section comes and goes over 0.4 s, as the body
+    comes onto the floor and as it goes down the hole or onto a plate; the white's
+    takes over its egg's; and a body leaving the world at the plan's edge fades away
+    with its section over its last 5 cm. The hole is shown as if seen through the
+    ground, as the legs are through the top in the plan: its cut through its middle,
+    straight down to its bottom, is drawn first, in its colour (item 19), and no
+    section of the ground is drawn over it; what stands above the floor, a leg or a
+    body, is drawn over it whatever its depth, and what is down it, in it -- so
+    nothing comes and goes there as the table turns, nor seems to go down it that
+    has not. Each ground is in the plan's three washes, banded at the same heights,
+    so a colour is a height in every view, as the top's shade is.
  8. A screen reader hears "It is still.", "It rocks.", "One foot is in the air."
     or "N feet are in the air.", then, for a moment after one, "Somebody
     sneezed.", then what is on the table ("2 marbles, 1 meatball and 1 plate of
     spaghetti are on the table."), how many roll on the floor, rest in a hollow,
     went down the hole, rolled away, rolled out the door (meatballs), broke, and
     are cracked.
- 9. The label's second line says what is here: "a table, a floor, a hole", then
-    whatever else is ("7 marbles and an egg", "a plate of spaghetti", "a broken
+ 9. The label's second line says what is here: "a table, a floor", "a hole" once
+    it has opened, then whatever else is ("7 marbles and an egg", "a plate of spaghetti", "a broken
     egg"), as it comes and goes. Once anything has gone down the hole or a meatball
     out the door, a line under "Turn it." counts it ("3 in the hole. 1 meatball out
     the door."); the counts are kept for the visit, through another floor. The
@@ -82,9 +91,11 @@ What itsthefloor.fyi does. A golf pass must keep every line true.
     "drop a marble" lays one somewhere on the top. Each lays one more, at rest,
     just touching what it is laid on: over a plate, on its spaghetti or its china,
     come down onto from above to where it first touches; where something else
-    already lies, at the nearest clear place beside it, never under a plate's rim,
-    and on the floor clear of the legs, the top and the hole (what goes down it
-    must roll there). One time in thirty it is an egg (item 16);
+    already lies, at the nearest clear place beside it (looking out in rings 1.6 mm
+    apart, a plate's 8 mm apart, so that it may look across the top), never under a
+    plate's rim, and on the floor clear of the legs, the top and the hole (what goes
+    down it must roll there); where there is no clear place, nothing is laid. One
+    time in thirty it is an egg (item 16);
     one time in sixty, a plate of spaghetti (item 17).
 12. One world moves them all: rigid bodies in their true shapes under gravity,
     and, wherever two things touch (two bodies, a body and the floor, the top or
@@ -159,8 +170,15 @@ What itsthefloor.fyi does. A golf pass must keep every line true.
     across, its well 16 cm, its rim rising to 2.4 cm; on it a heap of spaghetti in
     sauce, 4 cm high, slumping into the plate as a heap does, its strands, sauce
     and cheese drawn on it; plate and heap 973 g, one rigid body, standing on the
-    rim of its foot (met at sixteen points), riding the table by friction and
-    sliding if the table is turned hard. A sphere meets it by its true section, so
+    rim of its foot, riding the table by friction and sliding if the table is
+    turned hard. The top and the floor meet it, whichever way up it is, at 48
+    points round its foot and 48 round its lip (lying flat, every third of them
+    carries it) and at its heap's crown and twelve points round that, the top at
+    each point's nearest on it -- face, side or edge, and from inside, the shortest
+    way out -- and, near its edge, at their nearest; so a plate set past the edge
+    tips over it and falls, and may land upside down, and none goes into the top
+    by half a millimetre. Seen from beneath, it is its china alone; from the side,
+    its heap shows beyond its near rim, its own way up. A sphere meets it by its true section, so
     a marble can tuck under the rim's outer centimetre; an egg meets its top from
     above and its outline from beside. On the heap a meatball, 4 cm across, 35 g,
     set just so: where the plate's lean leaves it 99 in 100 of the way to
@@ -194,9 +212,11 @@ What itsthefloor.fyi does. A golf pass must keep every line true.
     button.
 19. A hole in the floor, 5 cm across -- room for a meatball, or an egg on its side
     -- and 7 cm deep, so even an egg on its end goes all the way down; its bottom
-    level, its wall straight down from the floor's edge round it. Each floor has its
-    own, chosen with it: somewhere on a slope of at least 3 in 100, so never in a
-    hollow, beyond where the legs can stand, inside the plan. It is a hole and not a
+    level, its wall straight down from the floor's edge round it. It opens once there
+    are three marbles in the room, and each new floor waits for its own: somewhere
+    on a slope of at least 3 in 100, so never in a hollow, beyond where the legs can
+    stand, inside the plan, and clear of whatever lies there; it comes into its
+    colour from the floor's own over a second. It is a hole and not a
     mark: the floor is not there, and its edge is met where it is nearest. A marble
     whose touch crosses onto it is drawn in by the edge and drops (one rolling at
     0.24 m/s, 22.5 mm off its middle, does); one whose touch stays on the floor goes
@@ -205,7 +225,6 @@ What itsthefloor.fyi does. A golf pass must keep every line true.
     across it on its foot. White flowing to its edge pours in and is gone. It is the
     glaze of the floor's third where it is, deeper than the floor round it: by day
     that glaze's base; by night its wash two thirds of the way to the paper. In the
-    plan it is so, with what is in it seen from above; in the elevations it has its
-    own section, cut straight down to its bottom, so, with what is in it; from a leg,
-    item 18. Whatever has gone all the way below the floor there is counted, once
-    (item 9).
+    plan it is so, with what is in it seen from above; in the elevations as item 7
+    has it; from a leg, item 18. Whatever has gone all the way below the floor
+    there is counted, once (item 9).

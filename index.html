@@ -62,7 +62,7 @@ const{PI:P,sin,cos,abs,hypot,min,max,round,exp,sqrt,pow,atan2,random}=Math,fl=Ma
   $=i=>document.getElementById(i),c=$("c"),x=c.getContext("2d"),col={},C=k=>col["--"+k],
   calm=matchMedia("(prefers-reduced-motion: reduce)").matches;
 let n=4,th=0,to=0,drag=null,press=null,f,W,E,CW,CH,wide,dpr,map,said,balls=[],gone=0,old,t0,lv=[0,1],
-  sim=null,asleep=false,tp=null,hole=null,holed=0,saidWhat,saidScore="";
+  sim=null,asleep=false,tp=null,hole=null,holed=0,saidWhat,saidScore="",svAt=null;
 // the world's step, in milliseconds of the page's clock
 const STEP=1000/240;
 
@@ -80,15 +80,17 @@ const rnd=a=>(random()*2-1)*a,floor=g=>Object.assign((u,v)=>g(u,v)[0],{g}),
       return floor((u,v)=>{const p=u-u0,q=v-v0,e=a*exp(-(p*p+q*q)/1.6),r=g(u,v);return[e+r[0],r[1]-e*p/.8,r[2]-e*q/.8]})},
     ()=>{const a=rnd(.05),b=rnd(.05),g=gauss(3,.03,[.3,.4]);
       return floor((u,v)=>{const r=g(u,v);return[a*u*v+b*(u*u-v*v)+r[0],a*v+2*b*u+r[1],a*u-2*b*v+r[2]]})}],
-  another=()=>{f=kinds[fl(random()*kinds.length)]();hole=dig();if(W)paint();carry();wake()},
+  another=()=>{f=kinds[fl(random()*kinds.length)]();hole=null;if(W)paint();carry();wake()},
   // A hole in the floor, 5 cm across -- room for a meatball, or an egg on its side -- and 7
   // deep, so even an egg on its end goes all the way down; its bottom level, its wall straight
   // down from the floor's edge round it; somewhere on a slope (of at least 3 in 100, so it is
-  // never in a hollow), beyond where the legs can stand and inside the plan. Each floor has
-  // its own.
+  // never in a hollow), beyond where the legs can stand and inside the plan, and clear of
+  // whatever lies there. It opens once there are three marbles in the room, and comes into
+  // its colour over a second; each floor waits for its own.
   HR=.0625,HD=.175,
   dig=()=>{let best=null;for(let i=0;i<300;i++){const a=random()*2*P,r=1.18+random()*.3,c=[r*cos(a),r*sin(a)];
-      if(abs(c[0])>1.6-HR-.02||abs(c[1])>1.6-HR-.02)continue;const g=f.g(c[0],c[1]),s=hypot(g[1],g[2]);
+      if(abs(c[0])>1.6-HR-.02||abs(c[1])>1.6-HR-.02||balls.some(o=>hypot(o.x[0]-c[0],o.x[1]-c[1])<HR+bound(o)+.01))continue;
+      const g=f.g(c[0],c[1]),s=hypot(g[1],g[2]);
       if(!best||s>best.s)best={c,b:g[0]-HD,s};if(s>=.03)break}return best},
   feet=a=>Array.from({length:n},(_,k)=>{const q=a+P/2+2*P*k/n;return[cos(q),sin(q)]}),
   trace=(t,pts)=>pts.forEach((q,i)=>t[i?"lineTo":"moveTo"](q[0],q[1]));
@@ -138,8 +140,10 @@ function colours(){const cs=getComputedStyle(document.documentElement),bs=getCom
 // The hole, in every view: the glaze of the floor's third where it is, deeper than the floor
 // round it -- by day that glaze's base; by night, when the washes are dark and the bases
 // light, its wash two thirds of the way to the paper.
-const pitOf=()=>{const j=max(0,min(2,fl(3*(f(hole.c[0],hole.c[1])-lv[0])/(lv[1]-lv[0]+1e-9)))),nm=["qingbai","ru","longquan"][j],pa=C("paper#");
-  return pa[0]+pa[1]+pa[2]>382?C(nm+"-base#").slice():C(nm+"-wash#").map((v,i)=>round(v+(pa[i]-v)*2/3))};
+// (While it opens, it comes from the floor's wash into that colour.)
+const pitOf=()=>{const j=max(0,min(2,fl(3*(f(hole.c[0],hole.c[1])-lv[0])/(lv[1]-lv[0]+1e-9)))),nm=["qingbai","ru","longquan"][j],pa=C("paper#"),
+    wa=C(nm+"-wash#"),dp=pa[0]+pa[1]+pa[2]>382?C(nm+"-base#"):wa.map((v,i)=>v+(pa[i]-v)*2/3),u=hole.t0==null?1:min(1,(sim-hole.t0)/1000);
+  return dp.map((v,i)=>round(wa[i]+(v-wa[i])*u))};
 // The plan's floor: three washes, low to high, each a third of its heights, and ink
 // contours. The elevations keep the same thirds (lv), so a colour is a height in both.
 function paint(){const N=min(round(W*dpr),900),o=document.createElement("canvas"),hs=new Float32Array(N*N);let lo=1,hi=-1;
@@ -147,10 +151,8 @@ function paint(){const N=min(round(W*dpr),900),o=document.createElement("canvas"
   lv=[lo,hi];
   o.width=o.height=N;const g=o.getContext("2d"),img=g.createImageData(N,N),d=img.data,
     band=[C("qingbai-wash#"),C("ru-wash#"),C("longquan-wash#")],ink=C("ink#");
-  // and the hole, dark
-  const inh=k=>hole&&hypot((2*(k%N)/N-1)*1.6-hole.c[0],(1-2*fl(k/N)/N)*1.6-hole.c[1])<HR,pt_=hole&&pitOf();
-  for(let k=0;k<N*N;k++){const v=hs[k],b=band[max(0,min(2,fl(3*(v-lo)/(hi-lo+1e-9))))],e=v/.012,on=abs(e-round(e))<.07,dk=inh(k);
-    for(let z=0;z<3;z++)d[4*k+z]=dk?pt_[z]:on?(b[z]*3+ink[z])/4:b[z];d[4*k+3]=255}
+  for(let k=0;k<N*N;k++){const v=hs[k],b=band[max(0,min(2,fl(3*(v-lo)/(hi-lo+1e-9))))],e=v/.012,on=abs(e-round(e))<.07;
+    for(let z=0;z<3;z++)d[4*k+z]=on?(b[z]*3+ink[z])/4:b[z];d[4*k+3]=255}
   g.putImageData(img,0,0);map=o}
 
 // The drawing is seen whole on the first screen. Wide: the two elevations stacked
@@ -199,21 +201,23 @@ function elevation(p,plane,e,X,Y,w,tag){const s=w/2.8,cx=X+w/2,leg=.6*s,lw=.085*
     deep=r=>r[0]*d[0]+r[1]*d[1],rad=max(2,RAD*s),
     // the floor, drawn, at t across the view and z deep
     gy=(t,z)=>Y-f(t*e[0]+z*d[0],t*e[1]+z*d[1])*2*s,pit=hole&&"rgb("+pitOf()+")",
+    // The hole, as if seen through the ground, as the legs are through the top in the plan:
+    // its cut through its middle -- straight down from the floor's edge to its bottom, drawn
+    // at its true depth under the drawn floor, as what rests on it is -- is drawn first, dark,
+    // and no section of the ground is drawn over it; what stands above the floor, a leg or a
+    // body, is drawn over it whatever its depth, and what is down it, in it. So nothing comes
+    // and goes there as the table turns, and nothing seems to go down it that has not.
+    hz=hole&&hole.c[0]*d[0]+hole.c[1]*d[1],
+    cav=hole&&(()=>{const ct=hole.c[0]*e[0]+hole.c[1]*e[1],wall=[],rim=[];
+      for(let i=0;i<=12;i++){const t=ct-HR+2*HR*i/12;wall.push([cx+t*s,gy(t,hz)+(f(t*e[0]+hz*d[0],t*e[1]+hz*d[1])-hole.b)*s]);rim.push([cx+t*s,gy(t,hz)])}
+      return{wall:[rim[0],...wall,rim[12]],shape:[...wall,...rim.reverse()]}})(),
     // a section of the floor z deep, from a to b across the view: its ground filled down to
     // the panel's foot in the plan's thirds, each at its heights, and its ridge in ink, which
-    // lives inside its own ground, so none of it shows past the green
-    // (where it crosses the hole, straight down to the hole's bottom, drawn at its true depth
-    // under the drawn floor, as what rests on it is, and straight up again; the cut dark, the
-    // hole's far wall seen through it, as the plan has the hole)
-    cut=(a,b,z,iw)=>{const m=max(8,round((b-a)*20)),ts=[],pts=[],nt=[],g=new Path2D();let ch=null;for(let i=0;i<=m;i++)ts.push(a+(b-a)*i/m);
-      if(hole){const c=hole.c,w2=HR*HR-(z-(c[0]*d[0]+c[1]*d[1]))**2,ct=c[0]*e[0]+c[1]*e[1];if(w2>0){ch=[ct-sqrt(w2),ct+sqrt(w2)];ts.push(...ch.filter(t=>t>a&&t<b));ts.sort((p,q)=>p-q)}}
-      for(const t of ts){const X=[t*e[0]+z*d[0],t*e[1]+z*d[1]],y0=gy(t,z),yb=ch?y0+(f(X[0],X[1])-hole.b)*s:y0;
-        if(ch&&t==ch[0]){pts.push([cx+t*s,y0],[cx+t*s,yb]);nt.push([cx+t*s,y0],[cx+t*s,yb])}
-        else if(ch&&t==ch[1]){pts.push([cx+t*s,yb],[cx+t*s,y0]);nt.push([cx+t*s,yb],[cx+t*s,y0])}
-        else if(ch&&t>ch[0]&&t<ch[1]){pts.push([cx+t*s,yb]);nt.push([cx+t*s,yb])}else pts.push([cx+t*s,y0])}
-      if(nt.length>3){x.beginPath();trace(x,nt);x.closePath();x.fillStyle=pit;x.fill()}
+    // lives inside its own ground, so none of it shows past the green; none over the hole
+    cut=(a,b,z,iw)=>{const m=max(8,round((b-a)*20)),pts=[],g=new Path2D();for(let i=0;i<=m;i++){const t=a+(b-a)*i/m;pts.push([cx+t*s,gy(t,z)])}
       g.moveTo(cx+a*s,Y+.12*w);for(const q of pts)g.lineTo(q[0],q[1]);g.lineTo(cx+b*s,Y+.12*w);g.closePath();
-      x.fillStyle=C("qingbai-wash");x.fill(g);x.save();x.clip(g);
+      x.save();if(cav){x.beginPath();x.rect(X,Y-.6*w,w,.72*w);trace(x,cav.shape);x.closePath();x.clip("evenodd")}
+      x.fillStyle=C("qingbai-wash");x.fill(g);x.clip(g);
       for(const j of[1,2]){const yk=Y-(lv[0]+(lv[1]-lv[0])*j/3)*2*s;x.fillStyle=C(j<2?"ru-wash":"longquan-wash");x.fillRect(X,Y-.6*w,w,max(0,yk-Y+.6*w))}
       x.beginPath();trace(x,pts);x.lineWidth=iw;x.strokeStyle=C("ink");x.stroke();x.restore()},
     // a point of the world as this camera draws it: by the floor, its relief at twice its
@@ -252,10 +256,11 @@ function elevation(p,plane,e,X,Y,w,tag){const s=w/2.8,cx=X+w/2,leg=.6*s,lw=.085*
       x.fillStyle=C("amber-wash");x.fill();x.lineWidth=1.1;x.strokeStyle=C("amber-base");x.stroke();
       if(!rise&&!flush&&dz>.3){x.beginPath();for(let i=0;i<24;i++)x.lineTo(...end(P*i/12));x.closePath();x.fillStyle=mix(.6);x.fill();x.stroke()}};
   slab();
+  if(cav){x.globalAlpha=hole.t0==null?1:min(1,(sim-hole.t0)/1000);x.beginPath();trace(x,cav.shape);x.closePath();x.fillStyle=pit;x.fill();
+    x.beginPath();trace(x,cav.wall);x.lineWidth=1.5;x.strokeStyle=C("ink");x.stroke();x.globalAlpha=1}
   // the feet, the hole, the bodies and the pools in shot, back to front; what lies on a
   // plate, just after its plate; what is down the hole, just after the hole's own section
-  const lies=b=>{if(!b.R&&b.k!=3)for(const o of balls)if(o.k==3){const t=toF(o.M,sub(b.x,o.x));if(hypot(t[0],t[1])<PR&&t[2]>0)return o}},
-    down=b=>hole&&b!==hole&&!b.R&&over(b.x)&&b.x[2]<f(hole.c[0],hole.c[1]),
+  const lies=liesOn,down=b=>b!==hole&&inHole(b),
     key=([r,b])=>{const o=b&&b!==hole&&lies(b);return o?deep(o.x)-.001:b&&down(b)?deep(hole.c)-.0005:deep(r)};
   for(const[r,b]of[...p.map(r=>[r]),...(hole?[[[...hole.c,0],hole]]:[]),...[...balls.map(b=>[b.x,b]),...pools.map(q=>[pw(q,0,0),q])]
       .filter(([r,b])=>abs(r[0]*e[0]+r[1]*e[1])<1.42+(b.R||bound(b)))].sort((i,j)=>key(j)-key(i))){
@@ -271,14 +276,16 @@ function elevation(p,plane,e,X,Y,w,tag){const s=w/2.8,cx=X+w/2,leg=.6*s,lw=.085*
     x.save();if(near.length){frame();trace(x,hull(near.flatMap(([r,g])=>[up(r,leg),up(r,leg+.07*s)]
       .flatMap(([a,b])=>[[a-g,b-g],[a+g,b-g],[a+g,b+g],[a-g,b+g]]))));x.clip("evenodd")}
     // a body: its lowest point drawn where the world's map puts it, the body round it at
-    // its true size; off the table it carries a short section of its own ground, so it never
-    // stands on air, and the floor's sections stay the feet's, so the floor stays still
+    // its true size; off the table it carries the floor's section at its own depth, the
+    // whole width of the view as a foot's is, so it never stands on air and the ground moves
+    // with it unbroken (what lies within 4 mm of one depth shares one)
     const tm=r[0]*e[0]+r[1]*e[1],line=(a,b)=>{x.beginPath();for(let i=0;i<=8;i++){const t=a+(b-a)*i/8;x[i?"lineTo":"moveTo"](cx+t*s,gy(t,dk))}
       x.lineWidth=1.5;x.strokeStyle=C("ink");x.stroke()};
     // Drawn slopes are twice the true ones, so a body is turned by the difference about the
     // point it rests on -- the floor's, or the top's, or between them as it is between them
     // -- and sits on the drawn surface as it sits on the true one.
-    if(b===hole)cut(tm-HR-.04,tm+HR+.04,dk,1.5);
+    // (each section comes and goes as its body does; the hole's, as the hole opens)
+    if(b===hole){x.globalAlpha=hole.t0==null?1:min(1,(sim-hole.t0)/1000);cut(-1.4,1.4,dk,1.5);x.globalAlpha=1}
     else if(b&&!b.R){const L=surf(b,[0,0,-1]),u=(X,w)=>{const z=f(X[0],X[1]);return max(0,min(1,(X[2]-z)/(topZ(X)-z)))},w=u(L),
         sl=f.g(L[0],L[1]),nf=unit([-sl[1],-sl[2],1]),m=unit(add(mul(nf,1-w),mul(tp.M[2],w))),
         S=surf(b,mul(m,-1)),A=mid(S,u(S)),k=-(m[0]*e[0]+m[1]*e[1])/m[2],r=atan2(k,1)-atan2(2*k,1),cr=cos(r),sr=sin(r),
@@ -286,14 +293,16 @@ function elevation(p,plane,e,X,Y,w,tag){const s=w/2.8,cx=X+w/2,leg=.6*s,lw=.085*
         // depth as the drawn surface under it does: by its slope that way once more
         kz=-(m[0]*d[0]+m[1]*d[1])/m[2],
         pt=X=>{const a=((X[0]-S[0])*e[0]+(X[1]-S[1])*e[1])*s,c=-(X[2]-S[2]+kz*((X[0]-S[0])*d[0]+(X[1]-S[1])*d[1]))*s;return[A[0]+a*cr-c*sr,A[1]+a*sr+c*cr]};
-      if(b.off&&!lies(b)&&!down(b))cut(tm-bound(b)-.04,tm+bound(b)+.04,dk,1.5);
-      if(b.k)body(b,[d[0],d[1],0],pt);else{const c=pt(b.x),g=rad/(hypot(c[0]-A[0],c[1]-A[1])||1);dot(A[0]+(c[0]-A[0])*g,A[1]+(c[1]-A[1])*g,rad,b)}}
-    // a film of white: across the eye, its deepest at each place, laid on a section of its
-    // own ground, in its true depth; the yolk a dome; the bits of shell where they ride
+      const ef=nearEdge(b.x);
+      if(b.sv>0){const zq=(round(dk/.01)*.01).toFixed(2);if(!done["b"+zq]){done["b"+zq]=1;x.globalAlpha=b.sv*ef;cut(-1.4,1.4,+zq,1.5)}}
+      x.globalAlpha=ef;if(b.k)body(b,[d[0],d[1],0],pt);else{const c=pt(b.x),g=rad/(hypot(c[0]-A[0],c[1]-A[1])||1);dot(A[0]+(c[0]-A[0])*g,A[1]+(c[1]-A[1])*g,rad,b)}x.globalAlpha=1}
+    // a film of white: across the eye, its deepest at each place, laid on the floor's section
+    // at its true depth, the whole width of the view; the yolk a dome; the bits of shell where
+    // they ride
     else if(b&&b.h){const N=FN,bins=new Map();
       for(let a=0;a<N*N;a++)if(b.h[a]>.00025){const p=cell(b,a%N,fl(a/N)),t=round((p[0]*e[0]+p[1]*e[1])/FX);bins.set(t,max(bins.get(t)||0,b.h[a]))}
       const ks=[...bins.keys()].sort((p,q)=>p-q);
-      if(ks.length){cut(ks[0]*FX-.03,ks[ks.length-1]*FX+.03,dk,1.5);
+      if(ks.length){x.globalAlpha=b.sv==null?1:b.sv;cut(-1.4,1.4,dk,1.5);x.globalAlpha=1;
         for(let i=0;i<ks.length;){let j=i;while(j+1<ks.length&&ks[j+1]==ks[j]+1)j++;const run=ks.slice(i,j+1);i=j+1;
           x.beginPath();for(const c of run){const t=c*FX;x.lineTo(cx+t*s,gy(t,dk)-max(.6,bins.get(c)*s))}
           for(const c of run.reverse()){const t=c*FX;x.lineTo(cx+t*s,gy(t,dk))}
@@ -447,7 +456,8 @@ function crack(o,p){const q=toF(o.M,sub(p,o.x)),c=t=>max(.005-EL/2,min(EL/2-.005
 // furthest along u).
 function pose(plane,t){const m=unit([-plane[0],-plane[1],1]),s=hypot(m[0],m[1]),k=s>1e-12?[-m[1]/s,m[0]/s,0]:[1,0,0],a=atan2(s,m[2]);
   return{O:[0,0,plane[2]],M:[[cos(t),sin(t),0],[-sin(t),cos(t),0],[0,0,1]].map(e=>rot(e,k,a)),plane,t}}
-const corner=k=>{const a=P/2+2*P*k/n;return[1.12*cos(a),1.12*sin(a)]},
+// (the top's corners, worked out once for each number of legs)
+const CN={},corner=k=>{const c=CN[n]||(CN[n]=Array.from({length:n},(_,i)=>{const a=P/2+2*P*i/n;return[1.12*cos(a),1.12*sin(a)]}));return c[(k%n+n)%n]},
   foot=k=>{const a=P/2+2*P*k/n;return[cos(a),sin(a)]},
   part=k=>k<0?u=>{let b=-1/0,q;for(let j=0;j<n;j++){const c=corner(j),d=u[0]*c[0]+u[1]*c[1];if(d>b){b=d;q=c}}return[q[0],q[1],u[2]>0?.67:.6]}
     :u=>{const c=foot(k),l=hypot(u[0],u[1])||1;return[c[0]+.0425*u[0]/l,c[1]+.0425*u[1]/l,u[2]>0?.6:0]},
@@ -544,7 +554,13 @@ function pair(o,Pl,reach){const t=toF(Pl.M,sub(o.x,Pl.x)),a=hypot(t[0],t[1]),b=t
 // straight down, where the body's point furthest out from the hole's axis is below the floor;
 // the bottom. A sphere's nearest points exactly; an egg's by its own outline.
 const lip=t=>{const p=hole.c[0]+HR*cos(t),q=hole.c[1]+HR*sin(t);return[p,q,f(p,q)]},
-  over=X=>hole&&hypot(X[0]-hole.c[0],X[1]-hole.c[1])<HR;
+  over=X=>hole&&hypot(X[0]-hole.c[0],X[1]-hole.c[1])<HR,
+  // how far a body is from leaving the world at the plan's edge: in the views from the side,
+  // it fades away over its last 5 cm, and its section with it
+  nearEdge=X=>max(0,min(1,(1.6-max(abs(X[0]),abs(X[1])))/.12)),
+  // a body down the hole, below the floor there; and the plate a body lies on, if any
+  inHole=b=>hole&&!b.R&&over(b.x)&&b.x[2]<f(hole.c[0],hole.c[1]),
+  liesOn=b=>{if(!b.R&&b.k!=3)for(const o of balls)if(o.k==3){const t=toF(o.M,sub(b.x,o.x));if(hypot(t[0],t[1])<PR&&t[2]>0)return o}};
 function cup(A,r,h,cs){const c=hole.c,dx=A.x[0]-c[0],dy=A.x[1]-c[1],dh=hypot(dx,dy);if(dh>HR+bound(A)+r)return;
   const u=dh>1e-9?[dx/dh,dy/dh,0]:[1,0,0],add_=(n,pa,pb,key)=>{const d=dot3(sub(pa,pb),n);if(d<r)cs.push(meet(A,null,n,pa,pb,d,[0,0,0],[0,0,0],key+A.id,FLOOR,h))},
     gap=P_=>{if(A.r){const l=len(sub(A.x,P_));return{d:l-A.r,n:mul(sub(A.x,P_),1/(l||1)),a:null}}
@@ -656,22 +672,37 @@ function step(h,a,b,I){const cs=[],W=spun(a.M,b.M,h),at=(Q,X)=>add(Q.O,toW(Q.M,X
       const u=air(o.x);if(u){const rv=sub(u,o.v);o.v=add(o.v,mul(rv,min(1,.5*RHO*o.cd*o.ar*len(rv)*h/o.m)))}}}
   for(const A of I){if(A.z)continue;
     const r=(len(A.v)+len(A.w)*bound(A))*h+.002,R=bound(A)+r+ts*h,q=toF(a.M,sub(A.x,a.O));
-    // a plate stands on the rim of its foot, met at sixteen points, on the top or the floor
-    if(A.k==3)for(let j=0;j<16;j++){const X=add(A.x,toW(A.M,[PW*cos(P*j/8),PW*sin(P*j/8),-PLATE.zc])),u=toF(a.M,sub(X,a.O));
-      if(onTop(u[0],u[1])&&u[2]>.5){const d=u[2]-.67,pb=at(a,[u[0],u[1],.67]);if(d<r+ts*h){A.tt=1;cs.push(meet(A,null,a.M[2],X,pb,d,tv(pb),W,"t"+A.id+"_"+j,WOOD,h))}}
-      else{const g=f.g(X[0],X[1]),z=g[0],m=unit([-g[1],-g[2],1]),d=(X[2]-z)*m[2];
-        if(d<r&&!over(X))cs.push(meet(A,null,m,X,[X[0],X[1],z],d,[0,0,0],[0,0,0],"f"+A.id+"_"+j,FLOOR,h))}}
+    // a plate, wide and flat, is met at 48 points round the rim of its foot and 48 round its
+    // lip (close enough that neither ring can pass between them by half a millimetre), and at
+    // its heap's crown and twelve points round it -- so whichever way up it is: by the top, at
+    // each point's nearest on it (its face, its side or its edge, and from inside it the
+    // shortest way out), or by the floor; and, as anything else is, at its nearest to the top
+    // and the legs
+    if(A.k==3){const ring_=[[],[],[]];
+      for(let j=0;j<109;j++){const[R_,Z_]=j<48?[PW,-PLATE.zc]:j<96?[PR,PH-PLATE.zc]:j<97?[0,PT+HH-PLATE.zc]:[.08,heap(.08)-PLATE.zc],
+          t_=j<96?P*j/24:P*(j-97)/6,X=add(A.x,toW(A.M,[R_*cos(t_),R_*sin(t_),Z_])),u=toF(a.M,sub(X,a.O)),G=ring_[j<48?0:j<96?1:2];
+        if(hypot(u[0],u[1])<1.12+r+ts*h&&u[2]>.6-r-ts*h&&u[2]<.67+r+ts*h){const[p,i]=nigh(-1,u),e=sub(u,p),l=len(e),pb=at(a,p),d=i?-l:l;
+          // (a point on a face, its nearest the point itself, is met along that face's own normal)
+          if(d<r+ts*h)G.push([j,toW(a.M,l>1e-12?mul(e,(i?-1:1)/l):[0,0,u[2]>.635?1:-1]),X,pb,d,tv(pb),W,"t"+A.id+"_"+j,WOOD])}
+        else{const g=f.g(X[0],X[1]),z=g[0],m=unit([-g[1],-g[2],1]),d=(X[2]-z)*m[2];
+          if(d<r&&!over(X))G.push([j,m,X,[X[0],X[1],z],d,[0,0,0],[0,0,0],"f"+A.id+"_"+j,FLOOR])}}
+      // (a ring lying flat on what it meets, more than sixteen of its points touching, is
+      // carried by every third of them: lying flat, it cannot sag between them)
+      for(const G of ring_)for(const g of G)if(G.length<=16||g[0]%3==0){if(g[7][0]=="t")A.tt=1;cs.push(meet(A,null,g[1],g[2],g[3],g[4],g[5],g[6],g[7],g[8],h))}}
     // the floor, but where the hole is; and the hole
     else{const g=ground(A);if(g.d<r&&!over(g.p))cs.push(meet(A,null,g.n,g.s,g.p,g.d,[0,0,0],[0,0,0],"f"+A.id,FLOOR,h));if(hole)cup(A,r,h,cs)}
     // the top and the legs
-    if(hypot(q[0],q[1])<1.12+R&&q[2]>-R&&q[2]<.67+R)for(let k=A.k==3?0:-1;k<n;k++){
+    // (a plate wholly inside the top's outline is met by the top at its points alone: only
+    // near the edge can an edge or a corner come between them)
+    if(hypot(q[0],q[1])<1.12+R&&q[2]>-R&&q[2]<.67+R)for(let k=-1;k<n;k++){
       if(k>=0&&(hypot(q[0]-foot(k)[0],q[1]-foot(k)[1])>.061+R||q[2]>.6+R))continue;
+      if(k<0&&A.k==3&&1.12*cos(P/n)-max(...Array.from({length:n},(_,j)=>q[0]*cos(P/2+2*P*(j+.5)/n)+q[1]*sin(P/2+2*P*(j+.5)/n)))>R)continue;
       let m,pa,pb,s,o;
       // an egg over the top's face meets the face at its lowest point; elsewhere, the nearest
       if(A.k==1&&k<0&&(s=surf(A,mul(a.M[2],-1)),o=toF(a.M,sub(s,a.O)),onTop(o[0],o[1])&&o[2]>.66)){m=a.M[2];pa=s;pb=at(a,[o[0],o[1],.67])}
       else if(!A.r){const z=gjk(u=>core(A,u),sup(k));
         if(z){m=unit(sub(z.a,z.b));pa=sub(z.a,mul(m,rim(A)));pb=z.b}
-        else{m=toW(a.M,unit(sub(q,nigh(k,q)[0])));pa=surf(A,mul(m,-1));pb=sup(k)(m)}}
+        else{const[p,i]=nigh(k,q);m=toW(a.M,mul(unit(sub(q,p)),i?-1:1));pa=surf(A,mul(m,-1));pb=sup(k)(m)}}
       else{const[p,i]=nigh(k,q),e=sub(q,p),l=len(e)||1e-12;m=toW(a.M,mul(e,(i?-1:1)/l));pb=at(a,p);pa=sub(A.x,mul(m,A.r))}
       const d=dot3(sub(pa,pb),m);if(d<r+ts*h){A.tt=1;cs.push(meet(A,null,m,pa,pb,d,tv(pb),W,"t"+k+"_"+A.id,WOOD,h))}}
   }
@@ -732,6 +763,8 @@ function advance(a,b){const h=STEP/1000,c=k=>[...corner(k),.67],N=balls.length,
     const m=min(24,max(1,-fl(-max(...I.map(mv))*h/.002)));
     let q=a;for(let i=1;i<=m;i++){const t=i/m,r=i==m?b:pose(a.plane.map((z,j)=>z+(b.plane[j]-z)*t),a.t+(b.t-a.t)*t);step(h/m,q,r,I);q=r}}
   for(const o of balls)if(o.broke)spill(o);
+  // the hole opens once there are three marbles; what pools there flows to it now
+  if(!hole&&balls.filter(o=>!o.k).length>=3&&(hole=dig())){hole.t0=sim;for(const q of pools)if(q.h)bed(q)}
   // what has gone down the hole, all of it below the floor there, is counted, once
   if(hole){const top=f(hole.c[0],hole.c[1]);for(const o of balls)if(!o.holed&&over(o.x)&&o.x[2]+bound(o)<top){o.holed=1;holed++}}
   // what leaves the map is gone; a meatball, out the door
@@ -765,14 +798,22 @@ function lay(x0,y0,top){if(!tp)return;const c=random(),k=c<1/60?3:c<1/60+1/30?1:
     // goes down it must roll there)
     clear=()=>!(!top&&hole&&hypot(b.x[0]-hole.c[0],b.x[1]-hole.c[1])<HR+bound(b))&&(top?[]:Array.from({length:n+1},(_,k)=>k-1)).every(k=>{const S=part(k),z=gjk(v=>core(b,v),v=>add(tp.O,toW(tp.M,S(toF(tp.M,v)))));return z&&z.d-rim(b)>.0004})&&
       balls.every(o=>{if(len(sub(b.x,o.x))>bound(b)+bound(o)+.001)return 1;if(b.k==3&&o.k==3)return 0;
-      if(b.k==3||o.k==3){const[q,Pl]=b.k==3?[o,b]:[b,o],t=toF(Pl.M,sub(q.x,Pl.x)),r=hypot(t[0],t[1]);
+      // (a plate laid where anything lies within its reach and that thing's own would have it
+      // under its rim or in its dish: only the distance across is needed)
+      if(b.k==3){const t=toF(b.M,sub(o.x,b.x));return hypot(t[0],t[1])>=PR+bound(o)+.0004}
+      if(o.k==3){const q=b,Pl=o,t=toF(Pl.M,sub(q.x,Pl.x)),r=hypot(t[0],t[1]);
         // and not under a plate's rim
         return pair(q,Pl,.0004).d>.0004&&!(r<PR+bound(q)&&t[2]+PLATE.zc<dish(min(r,PR)))}
       if(b.r&&o.r)return len(sub(b.x,o.x))-b.r-o.r>.0004;const z=gjk(v=>core(b,v),v=>core(o,v));return z&&z.d-rim(b)-rim(o)>.0004});
   // where something already lies, beside it: the nearest clear place, on rings 1.6 mm apart
-  out:for(let i=0;i<80;i++)for(let j=0,J=max(1,6*i);j<J;j++){const a=2*P*j/J,p=x0+.004*i*cos(a),q=y0+.004*i*sin(a);
-    if(top&&!onTop(p,q))continue;put(p,q);if(clear())break out}
-  balls.push(b);if(k==3)perch(b);wake()}
+  // (8 mm for a plate, so that it may look as far as across the top; and on the top a place
+  // is passed over at once where anything on the top lies within the plate's reach and that
+  // thing's own, as clear() would find). Where there is no clear place, nothing is laid.
+  const ds=k<3||!top?[]:balls.filter(o=>!o.off).map(o=>{const q=toF(tp.M,sub(o.x,tp.O));return[q[0],q[1],o.k==3?bound(b)+bound(o)+.001:PR+bound(o)+.0004]}),
+    st=k==3?.02:.004;let found=0;
+  out:for(let i=0;i<80;i++)for(let j=0,J=max(1,6*i);j<J;j++){const a=2*P*j/J,p=x0+st*i*cos(a),q=y0+st*i*sin(a);
+    if(top&&!onTop(p,q)||ds.some(d_=>hypot(p-d_[0],q-d_[1])<d_[2]))continue;put(p,q);if(clear()){found=1;break out}}
+  if(!found)return;balls.push(b);if(k==3)perch(b);wake()}
 // The meatball set on the heap just so: along the line down the heap the way the plate
 // leans, at the furthest point where it still holds -- where the slope it feels is 97 in
 // 100 of what its rolling resistance can hold. Its plate is dressed: strands of spaghetti
@@ -804,7 +845,7 @@ function carry(){if(!tp)return;const a=tp,b=tp=pose(stand(sim).plane,th),re=v=>t
 // An egg broken open: its white round its yolk where it broke, bits of its shell about; on
 // the floor the white flows from there
 function spill(o){const on=!o.off,q=on?toF(tp.M,sub(o.x,tp.O)):o.x,
-    p={c:[q[0],q[1]],on,t0:sim,glaze:o.off,R:.15,a:[rnd(.12),random()*7,rnd(.08),random()*7],y:[rnd(.03),rnd(.03)],
+    p={c:[q[0],q[1]],on,t0:sim,glaze:o.off,R:.15,sv:o.sv||0,a:[rnd(.12),random()*7,rnd(.08),random()*7],y:[rnd(.03),rnd(.03)],
       bits:Array.from({length:5},()=>{const a=random()*2*P,r=.05+random()*.08;return[r*cos(a),r*sin(a),random()*7]})};
   if(!on)film(p);pools.push(p)}
 // a point of a pool, dx and dy from its middle, where it lies; how far it has spread (on the
@@ -890,7 +931,7 @@ function ball(b,d,pt){const c=pt(b.x),a1=unit(crs(d,abs(d[2])<.9?[0,0,1]:[1,0,0]
 // A plate of spaghetti as the eye along d sees it: the china; the heap, where it shows (from
 // the side the near rim hides its foot); its strands where they face the eye; the sauce and
 // the cheese on top. The heap meets the dish at RE.
-function platter(b,d,pt){const W_=v=>add(b.x,toW(b.M,v)),dl=toF(b.M,d),above=dl[2]<-.5,
+function platter(b,d,pt){const W_=v=>add(b.x,toW(b.M,v)),dl=toF(b.M,d),above=dl[2]<-.5,below=dl[2]>.5,
     a1=unit(crs(d,abs(d[2])<.9?[0,0,1]:[1,0,0])),a2=crs(d,a1),ring=(r,z,k)=>Array.from({length:k},(_,i)=>pt(W_([r*cos(2*P*i/k),r*sin(2*P*i/k),z-PLATE.zc]))),
     // the china's and the heap's outlines from the side: their points furthest each way across the eye
     out=F=>Array.from({length:48},(_,i)=>{const t=2*P*i/48,u=toF(b.M,add(mul(a1,cos(t)),mul(a2,sin(t)))),s=hypot(u[0],u[1]),c=[u[0]/(s||1),u[1]/(s||1)],q=F(s,u[2]);
@@ -901,15 +942,20 @@ function platter(b,d,pt){const W_=v=>add(b.x,toW(b.M,v)),dl=toF(b.M,d),above=dl[
         n=toW(b.M,unit([-pileD(q)*A[0]/(q||1),-pileD(q)*A[1]/(q||1),1]));if(dot3(n,d)<0){const p=pt(W_(A)),r=pt(W_(B));x.moveTo(p[0],p[1]);x.lineTo(r[0],r[1])}}
       x.strokeStyle=C(c);x.lineWidth=w;x.stroke()};
   x.save();x.lineJoin="round";
+  // seen from beneath, its china alone: the food is on the other side of it
+  if(below){x.beginPath();trace(x,ring(PR,PH,48));x.closePath();x.fillStyle=C("white");x.fill();x.lineWidth=1;x.strokeStyle=C("white-rule");x.stroke();
+    x.beginPath();trace(x,ring(PW,0,40));x.closePath();x.lineWidth=.7;x.stroke();x.restore();return}
   if(above){x.beginPath();trace(x,ring(PR,PH,48));x.closePath();x.fillStyle=C("white");x.fill();x.lineWidth=1;x.strokeStyle=C("white-rule");x.stroke();
     x.beginPath();trace(x,ring(PW,PT,40));x.closePath();x.lineWidth=.7;x.stroke();
     x.beginPath();trace(x,ring(RE,pile(RE),40));x.closePath();x.fillStyle=C("gold-wash");x.fill();x.strokeStyle=C("gold-base");x.lineWidth=.8;x.stroke()}
   else{const ch=out(china);x.beginPath();trace(x,ch);x.closePath();x.fillStyle=C("white");x.fill();x.lineWidth=1;x.strokeStyle=C("white-rule");x.stroke();
-    // the near rim's lip, across the eye: the heap shows above it
-    const L=pt(W_(add(mul(toF(b.M,a1),-PR),[0,0,PH-PLATE.zc]))),R=pt(W_(add(mul(toF(b.M,a1),PR),[0,0,PH-PLATE.zc]))),k=1e4;
-    const t=unit([R[0]-L[0],R[1]-L[1],0]),nv=t[0]>0?[t[1],-t[0]]:[-t[1],t[0]];
-    x.beginPath();x.moveTo(L[0]-t[0]*k,L[1]-t[1]*k);x.lineTo(R[0]+t[0]*k,R[1]+t[1]*k);
-    x.lineTo(R[0]+t[0]*k+nv[0]*k,R[1]+t[1]*k+nv[1]*k);x.lineTo(L[0]-t[0]*k+nv[0]*k,L[1]-t[1]*k+nv[1]*k);x.closePath();x.clip();
+    // the near half of the rim's lip, as the eye sees it, hides what is behind it: the heap
+    // shows beyond it, the plate's own way up (from the side, a line across; from above, the
+    // front of its round)
+    const lip_=Array.from({length:96},(_,i)=>{const X=W_([PR*cos(P*i/48),PR*sin(P*i/48),PH-PLATE.zc]);return[dot3(sub(X,b.x),d)<0,pt(X)]}),
+      i0=lip_.findIndex((q,i)=>q[0]&&!lip_[(i+95)%96][0]),fr=[],c0=pt(W_([0,0,0])),c1=pt(W_([0,0,PH])),uv=unit([c1[0]-c0[0],c1[1]-c0[1],0]);
+    for(let i=0;i<96&&i0>=0;i++){const q=lip_[(i0+i)%96];if(!q[0])break;fr.push(q[1])}
+    if(fr.length>1){const L_=fr[fr.length-1],F_=fr[0];x.beginPath();trace(x,fr);x.lineTo(L_[0]+uv[0]*1e4,L_[1]+uv[1]*1e4);x.lineTo(F_[0]+uv[0]*1e4,F_[1]+uv[1]*1e4);x.closePath();x.clip()}
     const hp=out(dome);x.beginPath();trace(x,hp);x.closePath();x.fillStyle=C("gold-wash");x.fill();x.strokeStyle=C("gold-base");x.lineWidth=.8;x.stroke()}
   lines(b.strands,"gold-base",.7);
   x.beginPath();trace(x,b.sauce.map(v=>pt(W_(v))));x.closePath();x.fillStyle=C("rust-accent");x.globalAlpha=.85;x.fill();x.globalAlpha=1;
@@ -1013,7 +1059,7 @@ function eye(p,h,plane){const V=lookout(),{E,F,R,U}=V,fo=V.f,near=.01,o=W/2,
   // The hole: its edge as the eye sees it, when all of it is before the eye; the floor is drawn
   // round it, and it dark, as the plan has it, with what is down it seen through it.
   const open=hole&&(()=>{const L=Array.from({length:48},(_,i)=>cam(lip(2*P*i/48)));return L.every(c=>c[2]>near)?L.map(scr):null})(),
-    down=b=>hole&&over(b.x)&&b.x[2]<f(hole.c[0],hole.c[1]),
+    down=inHole,
     round_=(g,fn)=>{if(!g){fn();return}x.save();x.beginPath();x.rect(0,0,W,W);trace(x,open);x.closePath();x.clip("evenodd");fn();x.restore()};
   const square=(x0,y0,g)=>{const m=[x0+g/2,y0+g/2,0];m[2]=f(m[0],m[1]);const cc=cam(m),rr=.75*g+.05,tn=1.1918,e=1.556*rr;
     if(cc[2]<near-rr||abs(cc[0])>tn*cc[2]+e||abs(cc[1])>tn*cc[2]+e)return;
@@ -1053,7 +1099,7 @@ function eye(p,h,plane){const V=lookout(),{E,F,R,U}=V,fo=V.f,near=.01,o=W/2,
   // world, fades away over its last 5 cm
   for(const b of balls){const L_=surf(b,[0,0,-1]),q=toF(tp.M,sub(b.x,tp.O));if(onTop(q[0],q[1])&&L_[2]>topZ(L_)-.003||open&&down(b))continue;
     const c=cam(b.x);if(c[2]<near+bound(b))continue;
-    const a=(1-fog(b.x))*max(0,min(1,(1.6-max(abs(b.x[0]),abs(b.x[1])))/.12));if(a<=0)continue;
+    const a=(1-fog(b.x))*nearEdge(b.x);if(a<=0)continue;
     items.push([dist(surf(b,unit(sub(E,b.x))))-.05,()=>{const d=unit(sub(b.x,E)),P2=X=>pt(X)||scr([0,0,1]);x.globalAlpha=a;
       if(b.k)body(b,d,P2);else{const S=P2(b.x);dot(S[0],S[1],max(1.5,b.r*fo/c[2]),b)}x.globalAlpha=1}])}
   items.sort((p_,q)=>q[0]-p_[0]);for(const[,fn]of items)fn();
@@ -1078,6 +1124,7 @@ function draw(wall){
   x.setTransform(dpr,0,0,dpr,0,0);x.clearRect(0,0,CW,CH);
   if(view)eye(p,h,plane);else{x.drawImage(map,0,0,W,W);
   for(const q of pools)if(!q.on)pond(q,pl,s);
+  if(hole){const c=pl([...hole.c,0]);x.beginPath();x.arc(c[0],c[1],HR*s,0,7);x.fillStyle="rgb("+pitOf()+")";x.fill()}
   things(false);
   // the legs from above, seen through the top: each round, from its foot up to the top,
   // leaning as the table leans; and under each foot a soft shadow on the floor, darkest
@@ -1102,9 +1149,14 @@ function draw(wall){
   things(true);
   x.font=col.font;camera(ea,o,s,"a");camera(eb,o,s,"b")}
   x.font=col.font;
+  // each body's section in the elevations comes and goes over 0.4 s of the page's clock: as
+  // the body comes onto the floor, and as it goes down the hole or onto a plate
+  const ds=(sim-(svAt==null?sim:svAt))/400;svAt=sim;
+  for(const d of balls){const w=d.off&&!liesOn(d)&&!inHole(d);d.sv=max(0,min(1,(d.sv||0)+(w?ds:-ds)))}
+  for(const q of pools)if(!q.on)q.sv=min(1,q.sv+ds);
   if(wide){elevation(p,plane,ea,W+32,.52*E+.01*W,E,"a");elevation(p,plane,eb,W+32,W/2+.52*E+.01*W,E,"b")}
   else{elevation(p,plane,ea,0,W*1.4,E,"a");elevation(p,plane,eb,E+24,W*1.4,E,"b")}
-  const down=d=>hole&&over(d.x)&&d.x[2]<f(hole.c[0],hole.c[1]),
+  const down=inHole,
     on=balls.filter(d=>!d.off),still=balls.filter(d=>d.off&&d.z&&!down(d)).length,loose=balls.filter(d=>d.off&&!d.z&&!down(d)).length,
     cracked=balls.filter(d=>d.cracks.length).length,broke=pools.length,
     names=[["marble","marbles"],["egg","eggs"],["meatball","meatballs"],["plate of spaghetti","plates of spaghetti"]],
@@ -1129,7 +1181,7 @@ function draw(wall){
     else{x.setTransform(1,0,0,1,0,0);x.globalAlpha=1-ease(k);x.drawImage(old,0,0);x.globalAlpha=1}}
   // when nothing moves -- no lean, no turn, nothing awake, no sneeze to come or going, no
   // spreading, no fade -- the page rests, and draws nothing, until something wakes it
-  if(drag!==null||abs(to-th)>1e-4||R.length>1&&!calm||old||balls.some(d=>!d.z||d.at)||sneeze||pools.some(q=>q.live||sim-q.t0<1500))requestAnimationFrame(draw);
+  if(drag!==null||abs(to-th)>1e-4||R.length>1&&!calm||old||balls.some(d=>!d.z||d.at)||sneeze||pools.some(q=>q.live||sim-q.t0<1500)||hole&&sim-hole.t0<1000)requestAnimationFrame(draw);
   else asleep=true}
 function wake(){if(asleep){asleep=false;requestAnimationFrame(draw)}}
 // the curve the page's own colours fade along, CSS's "ease": cubic-bezier(.25,.1,.25,1)
