@@ -111,7 +111,10 @@ What itsthefloor.fyi does. A golf pass must keep every line true.
     whatever it might meet (up to 4.6 m/s): a marble riding a turning top moves
     hardly at all against it; bodies that cannot touch within a step are stepped
     apart. A body still for half a second, on
-    nothing moving, rests until something wakes it. A marble or an egg is one
+    nothing moving, rests until something moving touches it, and is woken before
+    that step begins, so it takes the whole step, its weight and what it stands on
+    with it; something still that touches it leaves it at rest, and it holds as the
+    floor does. A marble or an egg is one
     glaze on the table and another once it has left it, in every view: Jun blue
     and crimson at first (item 15).
 13. Each elevation is a camera with a frame: nothing in it is drawn outside its

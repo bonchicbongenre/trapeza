@@ -407,6 +407,9 @@ const MM=160000*4/3*P*RAD**3,MI=.4*MM*RAD*RAD,EM=.015,MR=.05,MB=67200*4/3*P*MR**
   rim=b=>b.r||(b.k==1?EM:0),bound=b=>b.r||(b.k==1?EGG.R:PLATE.B),
   // the moments, inverted, applied to u in the world; and a raw egg's liquid's
   inv=(b,u)=>b.r?mul(u,1/b.I[0]):toW(b.M,toF(b.M,u).map((v,i)=>v/b.I[i])),
+  // the same, as the room sees it while the body's frame holds: a matrix, row by row
+  iwOf=b=>{if(b.r){const s=1/b.I[0];return[s,0,0,0,s,0,0,0,s]}const M=b.M,I=b.I,o=[];
+    for(let i=0;i<3;i++)for(let j=0;j<3;j++)o.push(M[0][i]*M[0][j]/I[0]+M[1][i]*M[1][j]/I[1]+M[2][i]*M[2][j]/I[2]);return o},
   invC=(b,u)=>toW(b.M,toF(b.M,u).map((v,i)=>v/b.C[i])),
   // a push J at r from the centre, and a twist T
   kick=(b,J,r)=>{b.v=add(b.v,mul(J,1/b.m));twirl(b,crs(r,J))},
@@ -561,7 +564,7 @@ function meet(A,B,n,pa,pb,d,V,W,key,mat,h){
     kl=(u,v)=>dot3(u,v)*(1/A.m+(B?1/B.m:0))+dot3(crs(ra,u),inv(A,crs(ra,v)))+(B?dot3(crs(rb,u),inv(B,crs(rb,v))):0),
     ka=(u,v)=>dot3(u,inv(A,v))+(B?dot3(u,inv(B,v)):0),
     i2=(a,b,c,d)=>{const q=a*d-b*c;return[d/q,-b/q,-c/q,a/q]},
-    c={A,B,n,ra,rb,d,V,W,h,key,t1,t2,e:min(A.e,o_.e),mu:sqrt(A.mu*o_.mu),rr:max(A.rr,B?B.rr:0,mat&&mat.rr||0),tw:max(A.tw,B?B.tw:0),kn:1/kl(n,n),
+    c={A,B,n,ra,rb,d,V,W,h,key,t1,t2,e:min(A.e,o_.e),mu:sqrt(A.mu*o_.mu),rr:max(A.rr,B?B.rr:0,mat&&mat.rr||0),tw:max(A.tw,B?B.tw:0,mat&&mat.tw||0),kn:1/kl(n,n),
       kt:i2(kl(t1,t1),kl(t1,t2),kl(t2,t1),kl(t2,t2)),kr:i2(ka(t1,t1),ka(t1,t2),ka(t2,t1),ka(t2,t2)),kw:1/ka(n,n),ln:0,lt:[0,0],lr:[0,0],lw:0},
     o=A.hm&&A.hm.get(key);
   c.v0=dot3(sub(add(A.v,crs(A.w,ra)),B?add(B.v,crs(B.w,rb)):V),n);c.o=o;
@@ -575,19 +578,31 @@ function warm(c){const{A,B,n,ra,rb,t1,t2,h,o}=c;if(!o)return;const s=h/o[4];
 // One push at a contact: mode 0 keeps the gap, and parts any overlap by a fifth a step (at
 // most 4 cm/s, so nothing is flung); mode 1 keeps the gap without the parting; mode 2 is
 // the bounce. Then friction, within mu of the push; rolling and twist, within their levers.
-function push(c,mode){const{A,B,n,ra,rb,h}=c,rel=()=>sub(add(A.v,crs(A.w,ra)),B?add(B.v,crs(B.w,rb)):c.V),wr=()=>sub(A.w,B?B.w:c.W);
+// (Its arithmetic is done in place, on numbers alone, there being so much of it: the speed
+// at the contact, one side's against the other's, into RV; a push at r, and a twist, through
+// each body's moments as the room sees them this step.)
+const RV=[0,0,0],
+  relv=c=>{const A=c.A,B=c.B,r=c.ra,v=A.v,w=A.w;let x=v[0]+w[1]*r[2]-w[2]*r[1],y=v[1]+w[2]*r[0]-w[0]*r[2],z=v[2]+w[0]*r[1]-w[1]*r[0];
+    if(B){const s=c.rb,u=B.v,o=B.w;x-=u[0]+o[1]*s[2]-o[2]*s[1];y-=u[1]+o[2]*s[0]-o[0]*s[2];z-=u[2]+o[0]*s[1]-o[1]*s[0]}else{x-=c.V[0];y-=c.V[1];z-=c.V[2]}
+    RV[0]=x;RV[1]=y;RV[2]=z},
+  swivel=(b,x,y,z)=>{const L=b.L,w=b.w,M=b.iw;L[0]+=x;L[1]+=y;L[2]+=z;w[0]+=M[0]*x+M[1]*y+M[2]*z;w[1]+=M[3]*x+M[4]*y+M[5]*z;w[2]+=M[6]*x+M[7]*y+M[8]*z},
+  shove=(b,x,y,z,r)=>{const v=b.v,im=1/b.m;v[0]+=x*im;v[1]+=y*im;v[2]+=z*im;swivel(b,r[1]*z-r[2]*y,r[2]*x-r[0]*z,r[0]*y-r[1]*x)};
+function push(c,mode){const A=c.A,B=c.B,n=c.n,ra=c.ra,rb=c.rb,h=c.h,t1=c.t1,t2=c.t2;
   if(mode==2){if(!(c.v0<-VT&&c.ln>0))return;c.hit=1}
-  const g=mode==1?c.dn:c.d,tg=mode==2?-c.e*c.v0:g>0?-g/h:mode?0:min(.1,.2*max(0,-g-.0005)/h),
-    l=max(0,c.ln-c.kn*(dot3(rel(),n)-tg)),dl=l-c.ln;
-  c.ln=l;kick(A,mul(n,dl),ra);if(B)kick(B,mul(n,-dl),rb);
+  const g=mode==1?c.dn:c.d,tg=mode==2?-c.e*c.v0:g>0?-g/h:mode?0:min(.1,.2*max(0,-g-.0005)/h);
+  relv(c);const l=max(0,c.ln-c.kn*(RV[0]*n[0]+RV[1]*n[1]+RV[2]*n[2]-tg)),dl=l-c.ln;
+  c.ln=l;shove(A,n[0]*dl,n[1]*dl,n[2]*dl,ra);if(B)shove(B,-n[0]*dl,-n[1]*dl,-n[2]*dl,rb);
   if(mode==2)return;
-  let v=rel(),K=c.kt,a=c.lt[0]-K[0]*dot3(v,c.t1)-K[1]*dot3(v,c.t2),b=c.lt[1]-K[2]*dot3(v,c.t1)-K[3]*dot3(v,c.t2),m=hypot(a,b),lim=c.mu*c.ln;
+  relv(c);let K=c.kt,v1=RV[0]*t1[0]+RV[1]*t1[1]+RV[2]*t1[2],v2=RV[0]*t2[0]+RV[1]*t2[1]+RV[2]*t2[2],
+    a=c.lt[0]-K[0]*v1-K[1]*v2,b=c.lt[1]-K[2]*v1-K[3]*v2,m=hypot(a,b),lim=c.mu*c.ln;
   if(m>lim){a*=lim/m;b*=lim/m}
-  let J=add(mul(c.t1,a-c.lt[0]),mul(c.t2,b-c.lt[1]));c.lt=[a,b];kick(A,J,ra);if(B)kick(B,mul(J,-1),rb);
-  v=wr();K=c.kr;a=c.lr[0]-K[0]*dot3(v,c.t1)-K[1]*dot3(v,c.t2);b=c.lr[1]-K[2]*dot3(v,c.t1)-K[3]*dot3(v,c.t2);m=hypot(a,b);lim=c.rr*c.ln;
+  let p=a-c.lt[0],q=b-c.lt[1],x=t1[0]*p+t2[0]*q,y=t1[1]*p+t2[1]*q,z=t1[2]*p+t2[2]*q;c.lt[0]=a;c.lt[1]=b;shove(A,x,y,z,ra);if(B)shove(B,-x,-y,-z,rb);
+  const Aw=A.w,Bw=B?B.w:c.W;let wx=Aw[0]-Bw[0],wy=Aw[1]-Bw[1],wz=Aw[2]-Bw[2];
+  K=c.kr;v1=wx*t1[0]+wy*t1[1]+wz*t1[2];v2=wx*t2[0]+wy*t2[1]+wz*t2[2];a=c.lr[0]-K[0]*v1-K[1]*v2;b=c.lr[1]-K[2]*v1-K[3]*v2;m=hypot(a,b);lim=c.rr*c.ln;
   if(m>lim){a*=lim/m;b*=lim/m}
-  J=add(mul(c.t1,a-c.lr[0]),mul(c.t2,b-c.lr[1]));c.lr=[a,b];twirl(A,J);if(B)twirl(B,mul(J,-1));
-  lim=c.mu*c.tw*c.ln;a=max(-lim,min(lim,c.lw-c.kw*dot3(wr(),n)));J=mul(n,a-c.lw);c.lw=a;twirl(A,J);if(B)twirl(B,mul(J,-1))}
+  p=a-c.lr[0];q=b-c.lr[1];x=t1[0]*p+t2[0]*q;y=t1[1]*p+t2[1]*q;z=t1[2]*p+t2[2]*q;c.lr[0]=a;c.lr[1]=b;swivel(A,x,y,z);if(B)swivel(B,-x,-y,-z);
+  wx=Aw[0]-Bw[0];wy=Aw[1]-Bw[1];wz=Aw[2]-Bw[2];lim=c.mu*c.tw*c.ln;a=max(-lim,min(lim,c.lw-c.kw*(wx*n[0]+wy*n[1]+wz*n[2])));p=a-c.lw;c.lw=a;
+  swivel(A,n[0]*p,n[1]*p,n[2]*p);if(B)swivel(B,-n[0]*p,-n[1]*p,-n[2]*p)}
 
 // One step of the world, h seconds, the table moving from pose a to pose b: gravity; a raw
 // egg's liquid drawn round; the contacts; ten rounds of pushes; the bodies move; four
@@ -611,9 +626,27 @@ function step(h,a,b,I){const cs=[],W=spun(a.M,b.M,h),at=(Q,X)=>add(Q.O,toW(Q.M,X
     tv=p=>mul(sub(at(b,toF(a.M,sub(p,a.O))),p),1/h),
     ts=max(...Array.from({length:n},(_,k)=>len(sub(at(b,[...corner(k),.67]),at(a,[...corner(k),.67])))))/h,
     sup=k=>{const S=part(k);return u=>at(a,S(toF(a.M,u)))};
-  const fell=new Set();
+  // bodies near each other, measured as they are: each pair begun by the one awake, or by the
+  // elder of two awake. One asleep that one moving may touch wakes now, before anything else,
+  // so it takes the whole step as the rest do -- its weight, and what it stands on; one that
+  // only something still touches stays asleep, and holds as the floor does (else two still
+  // things touching would take turns waking each other, and never rest)
+  const pairs=[],meets=(A,B,m,pa,pb,d,key,mat)=>{if(!B.z)pairs.push([A,B,m,pa,pb,d,key,mat]);else if(!A.q){B.z=B.q=0;pairs.push([A,B,m,pa,pb,d,key,mat])}
+      else pairs.push([A,null,m,pa,pb,d,key,mat||B])};
+  near(I,o=>bound(o)+(o.z?0:(len(o.v)+len(o.w)*bound(o))*h)+.002,(P,Q)=>{if(P.z&&Q.z)return;
+    const[A,B]=Q.z||!P.z&&P.id<Q.id?[P,Q]:[Q,P],e=sub(A.x,B.x),r=(len(A.v)+len(A.w)*bound(A))*h+.002,rB=B.z?0:(len(B.v)+len(B.w)*bound(B))*h;
+    if(len(e)>bound(A)+bound(B)+r+rB)return;
+    // something on a plate meets its top, heap or china; anything else, the plate's outline
+    if((A.k==3)!=(B.k==3)){const[o,Pl]=A.k==3?[B,A]:[A,B],z=pair(o,Pl,r+rB);
+      if(z.d<r+rB)o===A?meets(o,Pl,z.n,z.pa,z.pb,z.d,o.id+"_"+Pl.id,z.mat):meets(Pl,o,mul(z.n,-1),z.pb,z.pa,z.d,o.id+"_"+Pl.id,z.mat);return}
+    let m,pa,pb;
+    if(A.r&&B.r){m=unit(e);pa=sub(A.x,mul(m,A.r));pb=add(B.x,mul(m,B.r))}
+    else{const z=gjk(u=>core(A,u),u=>core(B,u));
+      if(z){m=unit(sub(z.a,z.b));pa=sub(z.a,mul(m,rim(A)));pb=add(z.b,mul(m,rim(B)))}
+      else{m=unit(e);pa=surf(A,mul(m,-1));pb=surf(B,m)}}
+    const d=dot3(sub(pa,pb),m);if(d<r+rB)meets(A,B,m,pa,pb,d,A.id+"_"+B.id,null)});
   for(const o of I){if(o.z&&o.tt&&ts>1e-9)o.z=o.q=0;
-    if(!o.z){o.v[2]-=G*h;fell.add(o);if(o.raw)stir(o,h);o.w=inv(o,o.L);o.tt=o.fl=0;
+    if(!o.z){o.v[2]-=G*h;if(o.raw)stir(o,h);o.w=inv(o,o.L);o.iw=iwOf(o);o.tt=o.fl=0;
       // air moving past a body drags it: half the air's density times the body's drag
       // coefficient and frontal area, times the speed between them squared
       const u=air(o.x);if(u){const rv=sub(u,o.v);o.v=add(o.v,mul(rv,min(1,.5*RHO*o.cd*o.ar*len(rv)*h/o.m)))}}}
@@ -638,33 +671,19 @@ function step(h,a,b,I){const cs=[],W=spun(a.M,b.M,h),at=(Q,X)=>add(Q.O,toW(Q.M,X
       else{const[p,i]=nigh(k,q),e=sub(q,p),l=len(e)||1e-12;m=toW(a.M,mul(e,(i?-1:1)/l));pb=at(a,p);pa=sub(A.x,mul(m,A.r))}
       const d=dot3(sub(pa,pb),m);if(d<r+ts*h){A.tt=1;cs.push(meet(A,null,m,pa,pb,d,tv(pb),W,"t"+k+"_"+A.id,WOOD,h))}}
   }
-  // bodies near each other, waking any asleep: each pair begun by the one awake, or by the
-  // elder of two awake
-  near(I,o=>bound(o)+(o.z?0:(len(o.v)+len(o.w)*bound(o))*h)+.002,(P,Q)=>{if(P.z&&Q.z)return;
-    const[A,B]=Q.z||!P.z&&P.id<Q.id?[P,Q]:[Q,P],e=sub(A.x,B.x),r=(len(A.v)+len(A.w)*bound(A))*h+.002,rB=B.z?0:(len(B.v)+len(B.w)*bound(B))*h;
-    if(len(e)>bound(A)+bound(B)+r+rB)return;
-    // something on a plate meets its top, heap or china; anything else, the plate's outline
-    if((A.k==3)!=(B.k==3)){const[o,Pl]=A.k==3?[B,A]:[A,B],z=pair(o,Pl,r+rB);
-      if(z.d<r+rB){if(o.z)o.z=o.q=0;if(Pl.z)Pl.z=Pl.q=0;cs.push(meet(o,Pl,z.n,z.pa,z.pb,z.d,0,0,o.id+"_"+Pl.id,z.mat,h))}return}
-    let m,pa,pb;
-    if(A.r&&B.r){m=unit(e);pa=sub(A.x,mul(m,A.r));pb=add(B.x,mul(m,B.r))}
-    else{const z=gjk(u=>core(A,u),u=>core(B,u));
-      if(z){m=unit(sub(z.a,z.b));pa=sub(z.a,mul(m,rim(A)));pb=add(z.b,mul(m,rim(B)))}
-      else{m=unit(e);pa=surf(A,mul(m,-1));pb=surf(B,m)}}
-    const d=dot3(sub(pa,pb),m);if(d<r+rB){if(B.z)B.z=B.q=0;cs.push(meet(A,B,m,pa,pb,d,0,0,A.id+"_"+B.id,null,h))}});
+  for(const[A,B,m,pa,pb,d,key,mat]of pairs)cs.push(meet(A,B,m,pa,pb,d,[0,0,0],[0,0,0],key,mat,h));
   // rounds of pushes until they agree -- a whole round moves no point of any body by 0.04
   // mm/s -- at most ten; four times as many where a plate, 180 times a marble's weight,
   // presses on lighter things. (A plate stands on sixteen points, more than it needs, and its
   // pushes can pass its weight from point to point a long while with nothing moving for it.)
-  const much=I.some(o=>o.k==3)?4:1,rounds=(mode,most)=>{for(let i=0;i<most*much;i++){const was=I.map(o=>[o.v,o.w]);for(const c of cs)push(c,mode);
-      let e=0;I.forEach((o,k)=>{e=max(e,len(sub(o.v,was[k][0]))+len(sub(o.w,was[k][1]))*bound(o))});if(e<1e-4)break}};
+  const much=I.some(o=>o.k==3)?4:1,rounds=(mode,most)=>{for(let i=0;i<most*much;i++){const was=I.map(o=>[...o.v,...o.w]);for(const c of cs)push(c,mode);
+      let e=0;I.forEach((o,j)=>{const s=was[j];e=max(e,hypot(o.v[0]-s[0],o.v[1]-s[1],o.v[2]-s[2])+hypot(o.w[0]-s[3],o.w[1]-s[4],o.w[2]-s[5])*bound(o))});if(e<1e-4)break}};
   for(const c of cs)warm(c);
   rounds(0,10);
   for(const c of cs)c.dn=c.d+h*dot3(sub(add(c.A.v,crs(c.A.w,c.ra)),c.B?add(c.B.v,crs(c.B.w,c.rb)):c.V),c.n);
-  // a body held by nothing flies as gravity has it, exactly; one held moves at its speed; one
-  // woken during the step, which gravity has not yet drawn, moves at its speed too
+  // a body held by nothing flies as gravity has it, exactly; one held moves at its speed
   const held=new Set();for(const c of cs)if(c.ln>0){held.add(c.A);held.add(c.B)}
-  for(const o of I)if(!o.z){o.x=add(o.x,mul(o.v,h));if(!held.has(o)&&fell.has(o))o.x[2]+=G*h*h/2;spin(o,h);o.w=inv(o,o.L)}
+  for(const o of I)if(!o.z){o.x=add(o.x,mul(o.v,h));if(!held.has(o))o.x[2]+=G*h*h/2;spin(o,h);o.w=inv(o,o.L)}
   rounds(1,4);
   // what is remembered is the push that holds, not a bounce's
   for(const c of cs)c.keep=c.ln;
